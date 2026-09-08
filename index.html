@@ -748,8 +748,9 @@
         <h1 class="text-xl font-black">健和個案管理系統</h1>
         <p class="text-sm text-slate-600">登入診所雲端帳號，在不同電腦使用同一份資料。</p>
         <p role="status" class="text-xs p-3 rounded-xl bg-amber-50 text-amber-900">{{ supabaseSyncMsg }}</p>
-        <button @click="loginWithGoogle" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold">使用 Google 登入雲端</button>
-        <details class="text-sm">
+        <button v-if="googleLoginEnabled" @click="loginWithGoogle" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold">使用 Google 登入雲端</button>
+        <p v-else class="text-xs text-slate-500">請使用診所 Email 與系統專用密碼。Google 一鍵登入尚未設定。</p>
+        <details class="text-sm" :open="!googleLoginEnabled">
           <summary class="cursor-pointer py-2">使用診所 Email／密碼登入</summary>
           <label class="block mt-2">Email<input type="email" v-model="cloudEmail" autocomplete="username" class="w-full border rounded-lg p-2 mt-1" /></label>
           <label class="block mt-2">密碼<input type="password" v-model="cloudPassword" autocomplete="current-password" @keyup.enter="saveSupabaseCredentials" class="w-full border rounded-lg p-2 mt-1" /></label>
@@ -8020,6 +8021,7 @@
       setup() {
         // Identity is assigned only after Supabase verifies the user and membership.
         const currentUser = ref(null);
+        const googleLoginEnabled = Boolean(window.CLINIC_CONFIG?.googleEnabled);
         const enterLocalMode = () => {
           currentUser.value = { name: '本機模式', email: '僅此裝置，尚未登入雲端', picture: '', loginType: 'local' };
         };
@@ -12411,7 +12413,7 @@
           clearAllCaseData,
           // 🔐 診所登入系統與 Google 第三方登入
           currentUser,
-          loginWithGoogle, enterLocalMode, logout,
+          loginWithGoogle, enterLocalMode, logout, googleLoginEnabled,
 
         };
       }
