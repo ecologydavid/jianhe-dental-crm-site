@@ -9198,18 +9198,35 @@
         const cloudEmail = ref(''), cloudPassword = ref(''), cloudUser = ref('');
         // One row per settings group: edits to different groups do not conflict.
         const settingsCollection = {
-          get value() { return Object.entries(systemSettings.value).map(([id, value]) => ({ id, value })); },
+          get value() { return Object.entries(systemSettings.value).filter(([id]) => !['navVisibility', 'sections'].includes(id)).map(([id, value]) => ({ id, value })); },
           set value(rows) {
-            systemSettings.value = Object.fromEntries(rows.map(row => [row.id, row.value]));
+            systemSettings.value = { navVisibility: systemSettings.value.navVisibility, sections: systemSettings.value.sections,
+              ...Object.fromEntries(rows.filter(row => !['navVisibility', 'sections'].includes(row.id)).map(row => [row.id, row.value])) };
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(systemSettings.value));
           }
         };
-        const collections = { patients, appointments, lab_orders: labOrders, followups, clinic_settings: settingsCollection };
+        const personalSettings = {
+          get value() {
+            const userId = currentUser.value?.id;
+            if (!userId) return [];
+            return ['navVisibility', 'sections'].map(group => ({ id: userId + ':' + group, userId, value: systemSettings.value[group] || {} }));
+          },
+          set value(rows) {
+            for (const row of rows) {
+              const group = row.id.slice(row.id.indexOf(':') + 1);
+              if (row.userId === currentUser.value?.id && ['navVisibility', 'sections'].includes(group)) systemSettings.value[group] = row.value;
+            }
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(systemSettings.value));
+            if (currentUser.value?.id) localStorage.setItem('jianhe_layout:' + currentUser.value.id, JSON.stringify({ navVisibility: systemSettings.value.navVisibility, sections: systemSettings.value.sections }));
+          }
+        };
+        const collections = { patients, appointments, lab_orders: labOrders, followups, clinic_settings: settingsCollection, user_settings: personalSettings };
         const S = window.ClinicSync;
         let observed = {}, revisions = JSON.parse(localStorage.getItem('jianhe_sync_revisions:' + supabaseUrl.value) || '{}'), pending = JSON.parse(localStorage.getItem('jianhe_sync_queue:' + supabaseUrl.value) || '{}'), channel = null;
         let cloudSyncTimer = null, busy = false, connecting = false, ready = false;
         const queueKey = () => 'jianhe_sync_queue:' + supabaseUrl.value;
         const revisionKey = () => 'jianhe_sync_revisions:' + supabaseUrl.value;
+        const activePending = () => Object.values(pending).filter(c => c.table !== 'user_settings' || c.id.startsWith(currentUser.value?.id + ':'));
         const persistQueue = () => {
           localStorage.setItem(queueKey(), JSON.stringify(pending));
           localStorage.setItem(revisionKey(), JSON.stringify(revisions));
@@ -9323,24 +9340,36 @@
           } finally { connecting = false; }
         };
         const initializeCloudSettings = async () => {
-          const rows = await S.readAll(supabaseClient.value, 'clinic_settings');
+          const userId = currentUser.value.id;
+          const lastUser = localStorage.getItem('jianhe_layout_owner');
+          if (lastUser && lastUser !== userId) {
+            const cached = JSON.parse(localStorage.getItem('jianhe_layout:' + userId) || 'null');
+            for (const group of ['navVisibility', 'sections']) systemSettings.value[group] = S.clone(cached?.[group] || DEFAULT_SYSTEM_SETTINGS[group]);
+          }
+          localStorage.setItem('jianhe_layout_owner', userId);
+          // Retire old shared layout writes; each account now owns its layout.
+          for (const [key, change] of Object.entries(pending)) if (change.table === 'clinic_settings' && ['navVisibility', 'sections'].includes(change.id)) delete pending[key];
+          for (const table of ['clinic_settings', 'user_settings']) {
+          const collection = collections[table];
+          const rows = (await S.readAll(supabaseClient.value, table)).filter(row => table !== 'clinic_settings' || !['navVisibility', 'sections'].includes(row.id));
           const backupKey = 'jianhe_settings_before_cloud:' + supabaseUrl.value;
           if (!localStorage.getItem(backupKey)) localStorage.setItem(backupKey, JSON.stringify(systemSettings.value));
           const remote = new Map(rows.map(row => [row.id, row]));
-          const merged = new Map(rows.map(row => [row.id, S.decode('clinic_settings', row)]));
-          for (const item of settingsCollection.value) {
-            const key = 'clinic_settings:' + item.id;
+          const merged = new Map(rows.map(row => [row.id, S.decode(table, row)]));
+          for (const item of collection.value) {
+            const key = table + ':' + item.id;
             if (!remote.has(item.id) && !pending[key]) {
-              pending[key] = { table: 'clinic_settings', id: item.id, row: S.encode('clinic_settings', item), base: null, token: crypto.randomUUID() };
+              pending[key] = { table, id: item.id, row: S.encode(table, item), base: null, token: crypto.randomUUID() };
             }
           }
-          for (const row of rows) revisions['clinic_settings:' + row.id] = row.updated_at;
-          for (const change of Object.values(pending).filter(c => c.table === 'clinic_settings')) {
-            if (change.row) merged.set(change.id, S.decode('clinic_settings', change.row));
+          for (const row of rows) revisions[table + ':' + row.id] = row.updated_at;
+          for (const change of Object.values(pending).filter(c => c.table === table && (table !== 'user_settings' || c.id.startsWith(userId + ':')))) {
+            if (change.row) merged.set(change.id, S.decode(table, change.row));
             else merged.delete(change.id);
           }
-          settingsCollection.value = [...merged.values()];
-          observed.clinic_settings = S.clone(settingsCollection.value);
+          collection.value = [...merged.values()];
+          observed[table] = S.clone(collection.value);
+          }
           persistQueue();
         };
         const fetchFromSupabase = async () => {
@@ -9368,8 +9397,8 @@
             rememberLocalState();
             saveToStorage();
             persistQueue();
-            supabaseSyncStatus.value = Object.keys(pending).length ? 'error' : 'connected';
-            supabaseSyncMsg.value = Object.keys(pending).length ? '仍有待同步變更，請重試上傳。' : '資料已同步；正在接收其他裝置的更新。';
+            supabaseSyncStatus.value = activePending().length ? 'error' : 'connected';
+            supabaseSyncMsg.value = activePending().length ? '仍有待同步變更，系統會自動重試；若有衝突請開啟同步設定處理。' : '資料與帳號版面已同步；正在接收其他裝置的更新。';
             return true;
           } catch (error) {
             supabaseSyncStatus.value = 'error';
@@ -9382,6 +9411,7 @@
           busy = true;
           try {
             for (const [key, change] of Object.entries(pending)) {
+              if (change.table === 'user_settings' && !change.id.startsWith(currentUser.value?.id + ':')) continue;
               let query;
               const client = supabaseClient.value;
               if (!change.row && !change.base) { delete pending[key]; persistQueue(); continue; }
@@ -9409,7 +9439,7 @@
             }
             supabaseSyncStatus.value = 'connected';
             supabaseSyncMsg.value = '所有變更已儲存至雲端。';
-            if (Object.keys(pending).length) cloudSyncTimer = setTimeout(async () => { try { await flushCloud(); } catch {} }, 1200);
+            if (activePending().length) cloudSyncTimer = setTimeout(async () => { try { await flushCloud(); } catch {} }, 1200);
           } catch (error) {
             supabaseSyncStatus.value = 'error';
             supabaseSyncMsg.value = '上傳未完成，本機變更已保留：' + error.message;
@@ -9429,7 +9459,7 @@
         const scheduleCloudSync = () => {
           recordChanges();
           clearTimeout(cloudSyncTimer);
-          if (!ready || !Object.keys(pending).length) return;
+          if (!ready || !activePending().length) return;
           supabaseSyncStatus.value = 'connecting';
           supabaseSyncMsg.value = '變更已存本機，等待上傳…';
           cloudSyncTimer = setTimeout(async () => { try { await flushCloud(); } catch {} }, 1200);
@@ -12151,6 +12181,14 @@
           rememberLocalState();
           initSupabase();
           window.addEventListener('online', () => initSupabase());
+          // Recover transient failures and saves deferred while a fetch was busy.
+          const recoverCloud = async () => {
+            if (!currentUser.value?.id || navigator.onLine === false || busy || connecting) return;
+            if (!ready || supabaseSyncStatus.value === 'error') { await initSupabase(); return; }
+            try { await flushCloud(); await fetchFromSupabase(); } catch {}
+          };
+          setInterval(recoverCloud, 30000);
+          window.addEventListener('focus', recoverCloud);
 
 
 
