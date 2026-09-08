@@ -5376,7 +5376,6 @@
                 <input 
                   type="text" 
                   v-model="newAppointmentForm.newPatientPipelineStage" 
-                  list="pipelineStageOptions" 
                   class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
                 />
               </div>
@@ -6090,21 +6089,19 @@
 
           <div>
             <label class="block text-slate-700 font-bold mb-1">關懷類型 *</label>
-            <select v-model="newFollowupForm.type" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs">
-              <option value="術後1天傷口關懷">術後 1 天傷口疼痛關懷</option>
-              <option value="術後七天傷口評估/拆線提醒">術後 7 天傷口評估/拆線提醒</option>
-              <option value="術後3個月骨整合確認">術後 3 個月骨整合確認</option>
-              <option value="半年定期洗牙保固">半年定期洗牙保固</option>
-              <option value="自填">自填內容...</option>
-            </select>
-            <div v-if="newFollowupForm.type === '自填'" class="mt-1.5">
-              <input 
-                type="text" 
-                v-model="newFollowupForm.customType" 
-                required 
-                class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
-              />
-            </div>
+            <input 
+              type="text" 
+              v-model="newFollowupForm.type" 
+              list="followupTypeOptions" 
+              required 
+              class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
+            />
+            <datalist id="followupTypeOptions">
+              <option value="術後1天傷口關懷"></option>
+              <option value="術後七天傷口評估/拆線提醒"></option>
+              <option value="術後3個月骨整合確認"></option>
+              <option value="半年定期洗牙保固"></option>
+            </datalist>
           </div>
 
           <div>
@@ -9975,7 +9972,7 @@
         const newFollowupForm = ref({
           patientName: '',
           phone: '',
-          type: '術後1天傷口關懷',
+          type: '',
           customType: '',
           treatments: ['人工植牙手術'],
           customTreatment: '',
@@ -11864,7 +11861,7 @@
           newFollowupForm.value = {
             patientName: '',
             phone: '',
-            type: '術後1天傷口關懷',
+            type: '',
             customType: '',
             treatments: ['人工植牙手術'],
             customTreatment: '',
@@ -11876,10 +11873,8 @@
         };
 
         const createFollowup = () => {
-          // 決定關懷類型
-          const finalType = newFollowupForm.value.type === '自填'
-            ? (newFollowupForm.value.customType?.trim() || '自訂關懷')
-            : newFollowupForm.value.type;
+          // 決定關懷類型 (支援手動輸入或由下拉清單選取)
+          const finalType = (newFollowupForm.value.type || '').trim() || '術後關懷';
 
           // 決定手術項目 (支援複選標籤與自填)
           const selectedTreatments = Array.isArray(newFollowupForm.value.treatments) ? [...newFollowupForm.value.treatments] : [];
