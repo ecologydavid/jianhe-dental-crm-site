@@ -2201,20 +2201,37 @@
           <div v-if="isSectionVisible('calendarFilterBar')" class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-card flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-2 sm:gap-3">
               <div class="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/60">
-                <button @click="changeMonth(-1)" class="p-1.5 hover:bg-white rounded-lg text-slate-600 transition-colors" title="上個月">
+                <button @click="changePeriod(-1)" class="p-1.5 hover:bg-white rounded-lg text-slate-600 transition-colors cursor-pointer" :title="calendarPrevTooltip">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
-                <span class="px-2.5 text-xs font-bold text-slate-800 min-w-[85px] text-center">
-                  {{ calendarYear }} 年 {{ calendarMonth + 1 }} 月
+                <span class="px-2.5 text-xs font-bold text-slate-800 min-w-[85px] text-center whitespace-nowrap">
+                  {{ calendarPeriodLabel }}
                 </span>
-                <button @click="changeMonth(1)" class="p-1.5 hover:bg-white rounded-lg text-slate-600 transition-colors" title="下個月">
+                <button @click="changePeriod(1)" class="p-1.5 hover:bg-white rounded-lg text-slate-600 transition-colors cursor-pointer" :title="calendarNextTooltip">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
               </div>
 
-              <button @click="goToday" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors whitespace-nowrap">
+              <button @click="goToday" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors whitespace-nowrap cursor-pointer">
                 回到今天
               </button>
+
+              <!-- 📆 在"回到今天"的右側：排版呈現切換下拉選單 (一個月呈現 / 兩週呈現 / 一週呈現) -->
+              <div class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/70 rounded-xl px-2.5 py-1 text-xs transition-colors border border-slate-200/80 shadow-2xs">
+                <svg class="w-3.5 h-3.5 text-brand-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                </svg>
+                <span class="text-slate-500 font-bold text-[11px] whitespace-nowrap">呈現方式：</span>
+                <select 
+                  v-model="calendarViewSpan" 
+                  class="bg-transparent border-0 font-black text-slate-800 text-xs outline-none cursor-pointer focus:ring-0 pr-1 py-0.5"
+                  title="切換日曆呈現跨度（一個月 / 兩週 / 一週）"
+                >
+                  <option value="month">一個月呈現 (全月總覽)</option>
+                  <option value="twoWeeks">兩週呈現 (14天寬展)</option>
+                  <option value="week">一週呈現 (7天長條詳情)</option>
+                </select>
+              </div>
 
             </div>
 
@@ -2236,9 +2253,9 @@
 
           <!-- 月曆總覽視圖 -->
           <div class="overflow-x-auto pb-2">
-            <div class="min-w-[720px] bg-white rounded-2xl border border-slate-200/90 shadow-card overflow-hidden">
-              <div class="grid grid-cols-7 text-center py-2.5 bg-slate-50/90 border-b border-slate-200 text-xs font-bold text-slate-600">
-                <div class="text-rose-500">週日 (Sun)</div>
+            <div class="min-w-[760px] bg-white rounded-2xl border border-slate-200/90 shadow-card overflow-hidden">
+              <div class="grid grid-cols-7 text-center py-2.5 bg-slate-100/80 border-b border-slate-200 text-xs font-extrabold text-slate-700 tracking-wide">
+                <div class="text-rose-600">週日 (Sun)</div>
                 <div>週一 (Mon)</div>
                 <div>週二 (Tue)</div>
                 <div>週三 (Wed)</div>
@@ -2257,23 +2274,29 @@
                   @dragleave="onCalendarCellDragLeave($event, cell.dateKey)"
                   @drop="onCalendarMonthDrop($event, cell.dateKey)"
                   :class="[
-                    'min-h-[140px] p-2 flex flex-col transition-colors cursor-pointer group',
+                    'p-2 flex flex-col transition-colors cursor-pointer group',
+                    calendarViewSpan === 'week' ? 'min-h-[580px] sm:min-h-[660px]' : (calendarViewSpan === 'twoWeeks' ? 'min-h-[260px] sm:min-h-[300px]' : 'min-h-[140px]'),
                     cell.isCurrentMonth ? 'bg-white hover:bg-slate-50/80' : 'bg-slate-50/50 text-slate-300',
                     cell.isToday ? 'ring-2 ring-inset ring-brand-500/80 bg-brand-50/20' : '',
                     dragOverDateKey === cell.dateKey ? 'ring-2 ring-brand-500 bg-brand-100/60' : ''
                   ]"
                 >
                   <div class="flex items-center justify-between mb-1.5 px-0.5">
-                    <span 
-                      @click.stop="openNewAppointmentModalWithDate(cell.dateKey)"
-                      :class="[
-                        'w-6 h-6 rounded-full flex items-center justify-center text-xs font-black transition-all hover:scale-110 cursor-pointer shadow-2xs',
-                        cell.isToday ? 'bg-brand-600 text-white ring-2 ring-brand-300' : 'text-slate-700 group-hover:text-brand-600 group-hover:bg-slate-100'
-                      ]"
-                      title="點擊為此日排入新約診"
-                    >
-                      {{ cell.dayNum }}
-                    </span>
+                    <div class="flex items-center gap-1.5">
+                      <span 
+                        @click.stop="openNewAppointmentModalWithDate(cell.dateKey)"
+                        :class="[
+                          'w-6 h-6 rounded-full flex items-center justify-center text-xs font-black transition-all hover:scale-110 cursor-pointer shadow-2xs',
+                          cell.isToday ? 'bg-brand-600 text-white ring-2 ring-brand-300' : 'text-slate-700 group-hover:text-brand-600 group-hover:bg-slate-100'
+                        ]"
+                        title="點擊為此日排入新約診"
+                      >
+                        {{ cell.dayNum }}
+                      </span>
+                      <span v-if="calendarViewSpan !== 'month'" class="text-[10px] font-bold text-slate-400">
+                        {{ cell.monthNum }}/{{ cell.dayNum }}
+                      </span>
+                    </div>
                     
                     <span v-if="cell.appointments.length > 0" class="text-[10.5px] text-slate-500 font-extrabold pr-0.5 flex items-center gap-1">
                       <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
@@ -2284,7 +2307,7 @@
                   <div class="space-y-1.5 flex-1 overflow-hidden">
                     <!-- 門診預約卡片 (支援拖曳換日，格式：[約診時間] [病患名稱] [醫師名稱] [當日看診項目]) -->
                     <div 
-                      v-for="app in cell.appointments.slice(0, 3)" 
+                      v-for="app in getVisibleAppointments(cell)" 
                       :key="app.id"
                       draggable="true"
                       @dragstart="onCalendarDragStart($event, app)"
@@ -2312,12 +2335,17 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span>
                         <span class="truncate" :title="getAppTreatmentItemsText(app)">{{ getAppTreatmentItemsText(app) }}</span>
                       </div>
+                      <!-- 在一週長條模式下，額外顯示時長與診椅，更具臨床專業度 -->
+                      <div v-if="calendarViewSpan === 'week'" class="text-[10px] text-slate-500 font-semibold flex items-center justify-between mt-1 pt-1 border-t border-slate-200/60">
+                        <span v-if="app.chair" class="font-bold text-slate-700 bg-white/70 px-1 rounded">{{ app.chair }}</span>
+                        <span v-if="app.duration" class="font-mono">{{ app.duration }}分鐘</span>
+                      </div>
                     </div>
 
                     <!-- 🔔 T-3 提醒啟動日膠囊 (此日為預定看診日前 3 天) -->
                     <template v-if="isSectionVisible('calendarT3Capsules')">
                       <div 
-                        v-for="rem in (cell.t3Reminders || []).slice(0, 2)" 
+                        v-for="rem in (cell.t3Reminders || []).slice(0, calendarViewSpan === 'month' ? 2 : 4)" 
                         :key="'t3_' + rem.id"
                         @click.stop="openT3ModalWithReminder(rem)"
                         :class="rem.reminderDone ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 font-extrabold'"
@@ -2332,13 +2360,23 @@
                       </div>
                     </template>
 
+                    <!-- 一週長條模式專屬：若此日尚無約診，提供溫馨空狀態提示 -->
                     <div 
-                      v-if="cell.appointments.length > 3" 
+                      v-if="calendarViewSpan === 'week' && cell.appointments.length === 0 && (!cell.t3Reminders || cell.t3Reminders.length === 0)"
+                      @click.stop="openNewAppointmentModalWithDate(cell.dateKey)"
+                      class="h-36 flex flex-col items-center justify-center text-slate-300 group-hover:text-brand-600 transition-colors border-2 border-dashed border-slate-200 group-hover:border-brand-300 rounded-xl my-2 cursor-pointer"
+                      title="點擊為此日排入新約診"
+                    >
+                      <span class="text-xs font-bold">+ 點擊安排約診</span>
+                    </div>
+
+                    <div 
+                      v-if="getHiddenAppointmentsCount(cell) > 0" 
                       @click.stop="openNewAppointmentModalWithDate(cell.dateKey)"
                       class="text-[10px] text-slate-600 hover:text-brand-700 hover:bg-brand-50 font-extrabold px-1 text-center bg-slate-100/90 border border-slate-200 rounded py-0.5 cursor-pointer transition-colors"
                       title="點擊為此日排入約診"
                     >
-                      + 還有 {{ cell.appointments.length - 3 }} 筆約診...
+                      + 還有 {{ getHiddenAppointmentsCount(cell) }} 筆約診...
                     </div>
                   </div>
                 </div>
@@ -2346,7 +2384,6 @@
 
             </div>
           </div>
-
 
         </div>
 
@@ -8079,7 +8116,7 @@
 
   <!-- Vue 3 核心應用邏輯 -->
   <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted, watch } = Vue;
 
     createApp({
       setup() {
@@ -8249,6 +8286,25 @@
         const selectedCalendarDate = ref(getRealTodayStr());
         const calendarYear = ref(new Date().getFullYear());
         const calendarMonth = ref(new Date().getMonth());
+        // 📆 日曆呈現排版跨度：'month' (一個月呈現) | 'twoWeeks' (兩週呈現) | 'week' (一週長條呈現)
+        const calendarViewSpan = ref(localStorage.getItem('jianhe_calendar_view_span') || 'month');
+        const calendarAnchorDate = ref(getRealTodayStr());
+
+        watch(calendarViewSpan, (newSpan) => {
+          try { localStorage.setItem('jianhe_calendar_view_span', newSpan); } catch (e) {}
+          if (calendarAnchorDate.value) {
+            const curAnchor = new Date(calendarAnchorDate.value);
+            if (curAnchor.getFullYear() !== calendarYear.value || curAnchor.getMonth() !== calendarMonth.value) {
+              const todayObj = new Date(clinicToday.value || getRealTodayStr());
+              if (todayObj.getFullYear() === calendarYear.value && todayObj.getMonth() === calendarMonth.value) {
+                calendarAnchorDate.value = clinicToday.value || getRealTodayStr();
+              } else {
+                const mStr = String(calendarMonth.value + 1).padStart(2, '0');
+                calendarAnchorDate.value = `${calendarYear.value}-${mStr}-01`;
+              }
+            }
+          }
+        });
 
         // 即時數位時鐘 (時分秒動態跳動與分鐘數計算)
         const currentTimeStr = ref('');
@@ -10331,6 +10387,65 @@
         };
 
         const calendarMonthCells = computed(() => {
+          const dayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+          // 1. 一週呈現 (7 天垂直長條，容納大量個案約診)
+          if (calendarViewSpan.value === 'week') {
+            const anchor = new Date(calendarAnchorDate.value || clinicToday.value || '2026-09-09');
+            const sunday = new Date(anchor);
+            sunday.setDate(sunday.getDate() - sunday.getDay());
+
+            const cells = [];
+            for (let i = 0; i < 7; i++) {
+              const cur = new Date(sunday);
+              cur.setDate(sunday.getDate() + i);
+              const yyyy = cur.getFullYear();
+              const mm = String(cur.getMonth() + 1).padStart(2, '0');
+              const dd = String(cur.getDate()).padStart(2, '0');
+              const dateKey = `${yyyy}-${mm}-${dd}`;
+              cells.push({
+                dayNum: cur.getDate(),
+                monthNum: cur.getMonth() + 1,
+                dayName: dayNames[i],
+                dateKey,
+                isCurrentMonth: true,
+                isToday: dateKey === clinicToday.value,
+                appointments: getAppointmentsForDate(dateKey),
+                t3Reminders: getT3RemindersForDate(dateKey)
+              });
+            }
+            return cells;
+          }
+
+          // 2. 兩週呈現 (14 天長條寬展視圖)
+          if (calendarViewSpan.value === 'twoWeeks') {
+            const anchor = new Date(calendarAnchorDate.value || clinicToday.value || '2026-09-09');
+            const sunday = new Date(anchor);
+            sunday.setDate(sunday.getDate() - sunday.getDay());
+
+            const cells = [];
+            for (let i = 0; i < 14; i++) {
+              const cur = new Date(sunday);
+              cur.setDate(sunday.getDate() + i);
+              const yyyy = cur.getFullYear();
+              const mm = String(cur.getMonth() + 1).padStart(2, '0');
+              const dd = String(cur.getDate()).padStart(2, '0');
+              const dateKey = `${yyyy}-${mm}-${dd}`;
+              cells.push({
+                dayNum: cur.getDate(),
+                monthNum: cur.getMonth() + 1,
+                dayName: dayNames[i % 7],
+                dateKey,
+                isCurrentMonth: true,
+                isToday: dateKey === clinicToday.value,
+                appointments: getAppointmentsForDate(dateKey),
+                t3Reminders: getT3RemindersForDate(dateKey)
+              });
+            }
+            return cells;
+          }
+
+          // 3. 一個月呈現 (全月 35 或 42 格總覽)
           const year = calendarYear.value;
           const month = calendarMonth.value;
           
@@ -10346,6 +10461,8 @@
             const dateKey = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
             cells.push({
               dayNum,
+              monthNum: prevMonthDate.getMonth() + 1,
+              dayName: dayNames[prevMonthDate.getDay()],
               dateKey,
               isCurrentMonth: false,
               isToday: dateKey === clinicToday.value,
@@ -10356,8 +10473,11 @@
 
           for (let d = 1; d <= daysInMonth; d++) {
             const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const curDate = new Date(year, month, d);
             cells.push({
               dayNum: d,
+              monthNum: month + 1,
+              dayName: dayNames[curDate.getDay()],
               dateKey,
               isCurrentMonth: true,
               isToday: dateKey === clinicToday.value,
@@ -10373,6 +10493,8 @@
             const dateKey = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             cells.push({
               dayNum: d,
+              monthNum: nextMonthDate.getMonth() + 1,
+              dayName: dayNames[nextMonthDate.getDay()],
               dateKey,
               isCurrentMonth: false,
               isToday: dateKey === clinicToday.value,
@@ -10383,6 +10505,20 @@
 
           return cells;
         });
+
+        const getVisibleAppointments = (cell) => {
+          if (!cell || !cell.appointments) return [];
+          if (calendarViewSpan.value === 'week') return cell.appointments;
+          if (calendarViewSpan.value === 'twoWeeks') return cell.appointments.slice(0, 6);
+          return cell.appointments.slice(0, 3);
+        };
+
+        const getHiddenAppointmentsCount = (cell) => {
+          if (!cell || !cell.appointments) return 0;
+          if (calendarViewSpan.value === 'week') return 0;
+          if (calendarViewSpan.value === 'twoWeeks') return Math.max(0, cell.appointments.length - 6);
+          return Math.max(0, cell.appointments.length - 3);
+        };
 
         const getAppointmentsForDate = (dateStr) => {
           let list = appointments.value.filter(a => a.date === dateStr);
@@ -10740,6 +10876,51 @@
         };
 
         // 操作方法
+        // 📆 日曆週期導航與跨度計算引擎
+        const calendarPeriodLabel = computed(() => {
+          if (calendarViewSpan.value === 'month') {
+            return `${calendarYear.value} 年 ${calendarMonth.value + 1} 月`;
+          }
+          const anchor = new Date(calendarAnchorDate.value || clinicToday.value || '2026-09-09');
+          if (isNaN(anchor.getTime())) {
+            return `${calendarYear.value} 年 ${calendarMonth.value + 1} 月`;
+          }
+          const sunday = new Date(anchor);
+          sunday.setDate(sunday.getDate() - sunday.getDay());
+          
+          const spanDays = calendarViewSpan.value === 'twoWeeks' ? 14 : 7;
+          const endDate = new Date(sunday);
+          endDate.setDate(endDate.getDate() + spanDays - 1);
+          
+          const sY = sunday.getFullYear();
+          const sM = sunday.getMonth() + 1;
+          const sD = sunday.getDate();
+          const eY = endDate.getFullYear();
+          const eM = endDate.getMonth() + 1;
+          const eD = endDate.getDate();
+          
+          const tag = calendarViewSpan.value === 'twoWeeks' ? '兩週' : '一週';
+          if (sY === eY) {
+            if (sM === eM) {
+              return `${sY} 年 ${sM} 月 (${sM}/${sD} ~ ${eD}) · ${tag}`;
+            }
+            return `${sY} 年 (${sM}/${sD} ~ ${eM}/${eD}) · ${tag}`;
+          }
+          return `${sY}/${sM}/${sD} ~ ${eY}/${eM}/${eD} · ${tag}`;
+        });
+
+        const calendarPrevTooltip = computed(() => {
+          if (calendarViewSpan.value === 'week') return '上一週 (往前 7 天)';
+          if (calendarViewSpan.value === 'twoWeeks') return '前兩週 (往前 14 天)';
+          return '上個月';
+        });
+
+        const calendarNextTooltip = computed(() => {
+          if (calendarViewSpan.value === 'week') return '下一週 (往後 7 天)';
+          if (calendarViewSpan.value === 'twoWeeks') return '後兩週 (往後 14 天)';
+          return '下個月';
+        });
+
         const changeMonth = (diff) => {
           let newMonth = calendarMonth.value + diff;
           if (newMonth > 11) {
@@ -10751,17 +10932,45 @@
           } else {
             calendarMonth.value = newMonth;
           }
+          const mStr = String(calendarMonth.value + 1).padStart(2, '0');
+          calendarAnchorDate.value = `${calendarYear.value}-${mStr}-01`;
+        };
+
+        const changePeriod = (diff) => {
+          if (calendarViewSpan.value === 'month') {
+            changeMonth(diff);
+          } else if (calendarViewSpan.value === 'twoWeeks') {
+            const cur = new Date(calendarAnchorDate.value || clinicToday.value || '2026-09-09');
+            cur.setDate(cur.getDate() + diff * 14);
+            const yyyy = cur.getFullYear();
+            const mm = String(cur.getMonth() + 1).padStart(2, '0');
+            const dd = String(cur.getDate()).padStart(2, '0');
+            calendarAnchorDate.value = `${yyyy}-${mm}-${dd}`;
+            calendarYear.value = yyyy;
+            calendarMonth.value = cur.getMonth();
+          } else if (calendarViewSpan.value === 'week') {
+            const cur = new Date(calendarAnchorDate.value || clinicToday.value || '2026-09-09');
+            cur.setDate(cur.getDate() + diff * 7);
+            const yyyy = cur.getFullYear();
+            const mm = String(cur.getMonth() + 1).padStart(2, '0');
+            const dd = String(cur.getDate()).padStart(2, '0');
+            calendarAnchorDate.value = `${yyyy}-${mm}-${dd}`;
+            calendarYear.value = yyyy;
+            calendarMonth.value = cur.getMonth();
+          }
         };
 
         const goToday = () => {
           const now = new Date();
           calendarYear.value = now.getFullYear();
           calendarMonth.value = now.getMonth();
-          selectedCalendarDate.value = clinicToday.value;
+          calendarAnchorDate.value = clinicToday.value || getRealTodayStr();
+          selectedCalendarDate.value = clinicToday.value || getRealTodayStr();
         };
 
         const onCalendarCellClick = (dateStr) => {
           selectedCalendarDate.value = dateStr;
+          calendarAnchorDate.value = dateStr;
           openNewAppointmentModalWithDate(dateStr);
         };
 
@@ -12511,6 +12720,14 @@
           showNewFollowupModal,
           calendarYear,
           calendarMonth,
+          calendarViewSpan,
+          calendarAnchorDate,
+          calendarPeriodLabel,
+          calendarPrevTooltip,
+          calendarNextTooltip,
+          changePeriod,
+          getVisibleAppointments,
+          getHiddenAppointmentsCount,
           selectedCalendarDate,
           calendarViewMode,
           calendarFilterDoctor,
