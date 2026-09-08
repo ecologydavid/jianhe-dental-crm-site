@@ -2281,7 +2281,7 @@
                   </div>
 
                   <div class="space-y-1 flex-1 overflow-hidden">
-                    <!-- 門診預約膠囊 (支援拖曳換日) -->
+                    <!-- 門診預約膠囊 (支援拖曳換日，格式：[約診時間] [病患名稱] [醫師名稱] [當日看診項目]) -->
                     <div 
                       v-for="app in cell.appointments.slice(0, 3)" 
                       :key="app.id"
@@ -2290,15 +2290,20 @@
                       @dragend="onCalendarDragEnd"
                       @click.stop="openAppointmentDetail(app)"
                       :class="[
-                        'px-1.5 py-0.5 rounded text-[10px] font-bold truncate border cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] select-none',
+                        'px-1.5 py-0.5 my-0.5 rounded text-[9.5px] font-bold border cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01] select-none flex items-center gap-1 overflow-hidden leading-snug shadow-2xs',
                         getCalendarChipClass(app.category),
                         draggedCalendarApp && draggedCalendarApp.id === app.id ? 'opacity-40 scale-95 ring-1 ring-brand-400' : ''
                       ]"
-                      :title="`${app.time} ${app.patientName} (${app.category}) - 可拖曳至其他日期改期，點擊查看病患資料夾`"
+                      :title="`${app.time} ${app.patientName} | 醫師: ${app.doctor || '未指定'} | 項目: ${getAppTreatmentItemsText(app)} - 點擊查看`"
                     >
-                      <span class="font-extrabold mr-0.5">{{ app.time }}</span>
-                      <span>{{ app.patientName }}</span>
-                      <span class="font-semibold text-brand-800 bg-white/70 px-1 py-0.2 rounded text-[9px] ml-0.5">{{ app.doctor ? app.doctor.replace(' 醫師', '') : '' }}</span>
+                      <span class="font-mono font-black text-slate-800 flex-shrink-0 tracking-tight">{{ app.time }}</span>
+                      <span class="font-bold text-slate-900 truncate max-w-[45px] flex-shrink-0">{{ app.patientName }}</span>
+                      <span v-if="app.doctor" class="font-bold text-teal-800 bg-white/80 border border-teal-200/60 px-1 py-0.2 rounded text-[8.5px] flex-shrink-0 whitespace-nowrap">
+                        {{ app.doctor.replace(' 醫師', '').replace('醫師', '') }}
+                      </span>
+                      <span class="text-slate-700 font-semibold truncate flex-1 min-w-0" :title="getAppTreatmentItemsText(app)">
+                        {{ getAppTreatmentItemsText(app) }}
+                      </span>
                     </div>
 
                     <!-- 🔔 T-3 提醒啟動日膠囊 (此日為預定看診日前 3 天) -->
@@ -5141,12 +5146,12 @@
                 </div>
               </div>
 
-              <!-- 右側操作按鈕區 (三顆整齊統一排版) -->
+              <!-- 右側操作按鈕區 (三顆整齊統一排版，溫和協調醫療視覺) -->
               <div class="flex sm:flex-col items-stretch sm:justify-center gap-2 flex-shrink-0 w-full sm:w-40 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:border-slate-100 sm:pl-3">
                 <button 
                   type="button"
                   @click="copyLineTemplate(rem)"
-                  class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100/90 active:scale-95 text-emerald-800 border border-emerald-300/80 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   title="複製此病患專屬 LINE 衛教提醒訊息"
                 >
                   <span>📋</span>
@@ -5156,8 +5161,8 @@
                 <button 
                   type="button"
                   @click="toggleReminderStatus(rem)"
-                  :class="rem.reminderDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300' : 'bg-brand-600 hover:bg-brand-700 text-white shadow-xs'"
-                  class="w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  :class="rem.reminderDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300' : 'bg-teal-700 hover:bg-teal-800 text-white shadow-xs'"
+                  class="w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 >
                   <span>{{ rem.reminderDone ? '↩️' : '✅' }}</span>
                   <span class="whitespace-nowrap">{{ rem.reminderDone ? '設為待處理' : '標記已發送' }}</span>
@@ -5167,7 +5172,7 @@
                   v-if="rem.patientId"
                   type="button"
                   @click="showT3ReminderModal = false; viewPatientDetail(rem.patientId)"
-                  class="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-brand-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+                  class="w-full py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-teal-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
                   title="開啟病患個案完整資料夾"
                 >
                   <span>📁</span>
@@ -5308,57 +5313,46 @@
               <span class="text-[10px] text-slate-400">所有欄位均完整同步至病患資料庫</span>
             </div>
 
-            <!-- 第一列：姓名 *、病歷號 *、聯絡電話 *、LINE ID -->
+            <!-- 第一列：病患姓名、病歷號、連絡電話、LINEID -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
-                <label class="block text-slate-700 font-bold mb-0.5">病患姓名 *</label>
+                <label class="block text-slate-700 font-bold mb-0.5">病患姓名</label>
                 <input 
                   type="text" 
                   v-model="newAppointmentForm.newPatientName" 
                   required 
                   class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
-                  placeholder="例：趙先生" 
                 />
               </div>
               <div>
-                <label class="block text-slate-700 font-bold mb-0.5 flex items-center justify-between">
-                  <span>病歷號 *</span>
-                  <button 
-                    type="button" 
-                    @click="newAppointmentForm.newPatientChartNo = 'C' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + String(Math.floor(Math.random()*900+100))"
-                    class="text-[9px] text-brand-600 hover:underline cursor-pointer"
-                  >自動產生</button>
-                </label>
+                <label class="block text-slate-700 font-bold mb-0.5">病歷號</label>
                 <input 
                   type="text" 
                   v-model="newAppointmentForm.newPatientChartNo" 
                   required 
                   class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-mono font-bold text-xs" 
-                  placeholder="例：C260907" 
                 />
               </div>
               <div>
-                <label class="block text-slate-700 font-bold mb-0.5">聯絡電話 *</label>
+                <label class="block text-slate-700 font-bold mb-0.5">連絡電話</label>
                 <input 
                   type="text" 
                   v-model="newAppointmentForm.newPatientPhone" 
                   required 
                   class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
-                  placeholder="09xx-xxx-xxx" 
                 />
               </div>
               <div>
-                <label class="block text-slate-700 font-bold mb-0.5">LINE ID</label>
+                <label class="block text-slate-700 font-bold mb-0.5">LINEID</label>
                 <input 
                   type="text" 
                   v-model="newAppointmentForm.newPatientLineId" 
                   class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none text-xs" 
-                  placeholder="line_user123" 
                 />
               </div>
             </div>
 
-            <!-- 第二列：性別、目前狀態、個案進度階段 (自填)、主責醫師順序 (跨專科) -->
+            <!-- 第二列：性別、目前狀態、個案進度階段、主責醫師順序 (跨專科) -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
                 <label class="block text-slate-700 font-bold mb-0.5">性別</label>
@@ -5378,23 +5372,55 @@
                 </select>
               </div>
               <div>
-                <label class="block text-slate-700 font-bold mb-0.5">個案進度階段 (自填)</label>
+                <label class="block text-slate-700 font-bold mb-0.5">個案進度階段</label>
                 <input 
                   type="text" 
                   v-model="newAppointmentForm.newPatientPipelineStage" 
                   list="pipelineStageOptions" 
                   class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
-                  placeholder="例：1. 初診諮詢" 
                 />
               </div>
               <div>
                 <label class="block text-slate-700 font-bold mb-0.5">主責醫師順序 (跨專科)</label>
-                <input 
-                  type="text" 
-                  v-model="newAppointmentForm.newPatientLeadDoctors" 
-                  class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
-                  placeholder="例：TE, 欣 或 銘, TE" 
-                />
+                <div class="relative">
+                  <button 
+                    type="button" 
+                    @click.stop="isLeadDoctorsPickerOpen = !isLeadDoctorsPickerOpen"
+                    class="w-full p-1.5 bg-white border border-slate-300 rounded-lg text-left text-xs font-bold flex items-center justify-between hover:border-brand-500 focus:outline-none focus:border-brand-500 cursor-pointer min-h-[31px]"
+                  >
+                    <span class="truncate" :class="(newAppointmentForm.newPatientLeadDoctors && newAppointmentForm.newPatientLeadDoctors.length) ? 'text-slate-800' : 'text-slate-400 font-normal'">
+                      {{ (newAppointmentForm.newPatientLeadDoctors && newAppointmentForm.newPatientLeadDoctors.length) ? (Array.isArray(newAppointmentForm.newPatientLeadDoctors) ? newAppointmentForm.newPatientLeadDoctors.join(', ') : newAppointmentForm.newPatientLeadDoctors) : '---' }}
+                    </span>
+                    <span class="text-slate-400 text-[10px] ml-1 flex-shrink-0">▼</span>
+                  </button>
+
+                  <!-- 懸浮複選下拉面板 (同步後台看診醫師，依點選順序指派) -->
+                  <div 
+                    v-if="isLeadDoctorsPickerOpen" 
+                    class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl p-2 z-50 space-y-1 max-h-56 overflow-y-auto"
+                    @click.stop
+                  >
+                    <div class="text-[10px] text-slate-400 font-bold px-1 pb-1 border-b border-slate-100 flex items-center justify-between">
+                      <span>依點選順序指派順位</span>
+                      <button type="button" @click="newAppointmentForm.newPatientLeadDoctors = []" class="text-rose-500 hover:underline">清空</button>
+                    </div>
+                    <div 
+                      v-for="doc in clinicDoctors" 
+                      :key="doc.id"
+                      @click="toggleLeadDoctor(doc.name)"
+                      class="px-2 py-1.5 rounded-lg hover:bg-slate-50 flex items-center justify-between cursor-pointer text-xs transition-colors"
+                      :class="isLeadDoctorSelected(doc.name) ? 'bg-teal-50 text-teal-800 font-bold' : 'text-slate-700'"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: doc.color || '#0d9488' }"></span>
+                        <span>{{ doc.name }}</span>
+                      </div>
+                      <span v-if="isLeadDoctorSelected(doc.name)" class="text-[11px] font-bold text-teal-600">
+                        ✓ 第 {{ getLeadDoctorIndex(doc.name) }} 順位
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -6048,40 +6074,72 @@
         <form @submit.prevent="createFollowup" class="flex-1 overflow-y-auto space-y-3.5 py-3 pr-1 text-xs">
           <div>
             <label class="block text-slate-700 font-bold mb-1">病患姓名 *</label>
-            <input type="text" v-model="newFollowupForm.patientName" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="例：示範病患" />
+            <input type="text" v-model="newFollowupForm.patientName" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-700 font-bold mb-1">聯絡電話 *</label>
-              <input type="text" v-model="newFollowupForm.phone" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="09xx-xxx-xxx" />
-            </div>
-            <div>
-              <label class="block text-slate-700 font-bold mb-1">關懷類型 *</label>
-              <select v-model="newFollowupForm.type" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold">
-                <option value="術後1天傷口關懷">術後 1 天傷口疼痛關懷</option>
-                <option value="術後3天消腫追蹤">術後 3 天消腫追蹤</option>
-                <option value="術後7天拆線提醒">術後 7 天拆線提醒</option>
-                <option value="術後3個月骨整合確認">術後 3 個月骨整合確認</option>
-                <option value="半年定期洗牙保固">半年定期洗牙保固</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-slate-700 font-bold mb-1">手術項目</label>
-              <input type="text" v-model="newFollowupForm.treatment" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="人工植牙手術" />
+              <input type="text" v-model="newFollowupForm.phone" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" />
             </div>
             <div>
               <label class="block text-slate-700 font-bold mb-1">預計聯絡日期 *</label>
-              <input type="date" v-model="newFollowupForm.scheduledDate" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" />
+              <input type="date" v-model="newFollowupForm.scheduledDate" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">關懷類型 *</label>
+            <select v-model="newFollowupForm.type" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs">
+              <option value="術後1天傷口關懷">術後 1 天傷口疼痛關懷</option>
+              <option value="術後七天傷口評估/拆線提醒">術後 7 天傷口評估/拆線提醒</option>
+              <option value="術後3個月骨整合確認">術後 3 個月骨整合確認</option>
+              <option value="半年定期洗牙保固">半年定期洗牙保固</option>
+              <option value="自填">自填內容...</option>
+            </select>
+            <div v-if="newFollowupForm.type === '自填'" class="mt-1.5">
+              <input 
+                type="text" 
+                v-model="newFollowupForm.customType" 
+                required 
+                class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-slate-700 font-bold mb-1 flex items-center justify-between">
+              <span>手術項目 (可複選)</span>
+              <span class="text-[10px] text-teal-700 font-bold" v-if="newFollowupForm.treatments && newFollowupForm.treatments.length">
+                已選 {{ newFollowupForm.treatments.length }} 項
+              </span>
+            </label>
+            <div class="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+              <button 
+                type="button"
+                v-for="surg in availableSurgeryOptions" 
+                :key="surg"
+                @click="toggleFollowupTreatment(surg)"
+                :class="isFollowupTreatmentSelected(surg) ? 'bg-teal-700 text-white shadow-xs font-bold border-teal-700' : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'"
+                class="px-2.5 py-1 rounded-lg text-xs border transition-all cursor-pointer select-none"
+              >
+                <span v-if="isFollowupTreatmentSelected(surg)" class="mr-0.5">✓</span>
+                {{ surg }}
+              </button>
+            </div>
+            <div v-if="isFollowupTreatmentSelected('自填')" class="mt-1.5">
+              <input 
+                type="text" 
+                v-model="newFollowupForm.customTreatment" 
+                required
+                class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
+              />
             </div>
           </div>
 
           <div>
             <label class="block text-slate-700 font-bold mb-1">衛教備註</label>
-            <textarea v-model="newFollowupForm.notes" rows="2" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="提醒按時服用抗生素、避免用力漱口..."></textarea>
+            <textarea v-model="newFollowupForm.notes" rows="2" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none text-xs"></textarea>
           </div>
 
           <div class="pt-3 border-t border-slate-100 flex justify-end gap-2 flex-shrink-0">
@@ -9513,8 +9571,8 @@
           newPatientLineId: '',
           newPatientGender: '女',
           newPatientLeadStatus: '治療中',
-          newPatientPipelineStage: '1. 初診諮詢',
-          newPatientLeadDoctors: 'TE',
+          newPatientPipelineStage: '',
+          newPatientLeadDoctors: [],
           newPatientChiefComplaint: '',
           category: '植牙 (IMP)',
           doctor: 'TE 醫師',
@@ -9528,14 +9586,50 @@
           duration: 60,
           newPatientDrugAllergies: '',
           newPatientSystemicDiseases: '',
+          newPatientMedicalAlerts: '',
           existingPatientDrugAllergies: '',
           existingPatientSystemicDiseases: '',
           notes: ''
         });
 
-        // 門診約診排程連動選擇器狀態 (治療項目可複選、當日看診項目連動)
+        // 門診約診排程連動選擇器狀態 (治療項目可複選、當日看診項目連動、主責醫師跨專科連動)
         const isCategoryPickerOpen = ref(false);
         const isItemPickerOpen = ref(false);
+        const isLeadDoctorsPickerOpen = ref(false);
+
+        const toggleLeadDoctor = (docName) => {
+          if (!Array.isArray(newAppointmentForm.value.newPatientLeadDoctors)) {
+            newAppointmentForm.value.newPatientLeadDoctors = newAppointmentForm.value.newPatientLeadDoctors 
+              ? [newAppointmentForm.value.newPatientLeadDoctors] 
+              : [];
+          }
+          const idx = newAppointmentForm.value.newPatientLeadDoctors.indexOf(docName);
+          if (idx >= 0) {
+            newAppointmentForm.value.newPatientLeadDoctors.splice(idx, 1);
+          } else {
+            newAppointmentForm.value.newPatientLeadDoctors.push(docName);
+          }
+        };
+
+        const isLeadDoctorSelected = (docName) => {
+          if (!Array.isArray(newAppointmentForm.value.newPatientLeadDoctors)) return false;
+          return newAppointmentForm.value.newPatientLeadDoctors.includes(docName);
+        };
+
+        const getLeadDoctorIndex = (docName) => {
+          if (!Array.isArray(newAppointmentForm.value.newPatientLeadDoctors)) return '';
+          const idx = newAppointmentForm.value.newPatientLeadDoctors.indexOf(docName);
+          return idx >= 0 ? idx + 1 : '';
+        };
+
+        const getAppTreatmentItemsText = (app) => {
+          if (!app) return '';
+          if (app.treatmentItemsText) return app.treatmentItemsText;
+          if (Array.isArray(app.treatmentItems) && app.treatmentItems.length > 0) {
+            return app.treatmentItems.join('、');
+          }
+          return app.procedure || app.category || '一般門診';
+        };
 
         // 可選治療項目大類 (來自系統設定)
         const availableTreatmentCategories = computed(() => {
@@ -9875,14 +9969,36 @@
           appointmentDate: ''
         });
 
+        // 術後關懷手術項目可選標籤 (人工植牙手術、鼻竇提升術、FGG、CTG、GBR、PRF、自填)
+        const availableSurgeryOptions = ['人工植牙手術', '鼻竇提升術', 'FGG', 'CTG', 'GBR', 'PRF', '自填'];
+
         const newFollowupForm = ref({
           patientName: '',
           phone: '',
           type: '術後1天傷口關懷',
+          customType: '',
+          treatments: ['人工植牙手術'],
+          customTreatment: '',
           treatment: '人工植牙手術',
           scheduledDate: new Date().toISOString().slice(0, 10),
           notes: ''
         });
+
+        const toggleFollowupTreatment = (surg) => {
+          if (!Array.isArray(newFollowupForm.value.treatments)) {
+            newFollowupForm.value.treatments = [];
+          }
+          const idx = newFollowupForm.value.treatments.indexOf(surg);
+          if (idx > -1) {
+            newFollowupForm.value.treatments.splice(idx, 1);
+          } else {
+            newFollowupForm.value.treatments.push(surg);
+          }
+        };
+
+        const isFollowupTreatmentSelected = (surg) => {
+          return Array.isArray(newFollowupForm.value.treatments) && newFollowupForm.value.treatments.includes(surg);
+        };
 
         // 計算屬性
         const currentTabTitle = computed(() => {
@@ -10604,18 +10720,19 @@
           appointmentPatientMode.value = 'existing';
           isCategoryPickerOpen.value = false;
           isItemPickerOpen.value = false;
+          isLeadDoctorsPickerOpen.value = false;
           const defaultCats = ['植牙'];
           const defaultItems = ['植牙評估'];
           newAppointmentForm.value = {
             patientId: firstPatient ? firstPatient.id : '',
             newPatientName: '',
-            newPatientChartNo: 'C' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + String(Math.floor(Math.random()*900+100)),
+            newPatientChartNo: '',
             newPatientPhone: '',
             newPatientLineId: '',
             newPatientGender: '女',
             newPatientLeadStatus: '治療中',
-            newPatientPipelineStage: '1. 初診諮詢',
-            newPatientLeadDoctors: 'TE',
+            newPatientPipelineStage: '',
+            newPatientLeadDoctors: [],
             newPatientChiefComplaint: '',
             newPatientDrugAllergies: '',
             newPatientSystemicDiseases: '',
@@ -10717,8 +10834,10 @@
 
             const chartNoVal = (newAppointmentForm.value.newPatientChartNo || '').trim() || ('C' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + String(Math.floor(Math.random()*900+100)));
             const lineIdVal = (newAppointmentForm.value.newPatientLineId || '').trim();
-            const pipelineStageVal = (newAppointmentForm.value.newPatientPipelineStage || '').trim() || '1. 初診諮詢';
-            const leadDocVal = (newAppointmentForm.value.newPatientLeadDoctors || '').trim() || (newAppointmentForm.value.doctor || '').replace(' 醫師', '') || 'TE';
+            const pipelineStageVal = (newAppointmentForm.value.newPatientPipelineStage || '').trim() || '初診諮詢';
+            const leadDocVal = Array.isArray(newAppointmentForm.value.newPatientLeadDoctors)
+              ? newAppointmentForm.value.newPatientLeadDoctors.join(', ')
+              : ((newAppointmentForm.value.newPatientLeadDoctors || '').trim() || (newAppointmentForm.value.doctor || '').replace(' 醫師', '') || 'TE');
             const chiefComplaintVal = (newAppointmentForm.value.newPatientChiefComplaint || '').trim() || newAppointmentForm.value.notes || `${newAppointmentForm.value.category} 初診諮詢與評估`;
             const caseMgr = (currentUser.value && currentUser.value.name) ? currentUser.value.name : '螺絲小姐';
 
@@ -11746,6 +11865,9 @@
             patientName: '',
             phone: '',
             type: '術後1天傷口關懷',
+            customType: '',
+            treatments: ['人工植牙手術'],
+            customTreatment: '',
             treatment: '人工植牙手術',
             scheduledDate: new Date().toISOString().slice(0, 10),
             notes: ''
@@ -11754,12 +11876,25 @@
         };
 
         const createFollowup = () => {
+          // 決定關懷類型
+          const finalType = newFollowupForm.value.type === '自填'
+            ? (newFollowupForm.value.customType?.trim() || '自訂關懷')
+            : newFollowupForm.value.type;
+
+          // 決定手術項目 (支援複選標籤與自填)
+          const selectedTreatments = Array.isArray(newFollowupForm.value.treatments) ? [...newFollowupForm.value.treatments] : [];
+          const validTreatments = selectedTreatments.filter(t => t !== '自填');
+          if (selectedTreatments.includes('自填') && newFollowupForm.value.customTreatment?.trim()) {
+            validTreatments.push(newFollowupForm.value.customTreatment.trim());
+          }
+          const finalTreatment = validTreatments.length > 0 ? validTreatments.join('、') : '牙科手術';
+
           const f = {
             id: 'f_' + Date.now(),
             patientName: newFollowupForm.value.patientName,
             phone: newFollowupForm.value.phone,
-            type: newFollowupForm.value.type,
-            treatment: newFollowupForm.value.treatment,
+            type: finalType,
+            treatment: finalTreatment,
             operationDate: new Date().toISOString().slice(0, 10),
             scheduledDate: newFollowupForm.value.scheduledDate,
             status: '待處理',
@@ -12425,6 +12560,14 @@
           // 門診約診醫師、大類與細項連動選擇及後台維護
           isCategoryPickerOpen,
           isItemPickerOpen,
+          isLeadDoctorsPickerOpen,
+          toggleLeadDoctor,
+          isLeadDoctorSelected,
+          getLeadDoctorIndex,
+          getAppTreatmentItemsText,
+          availableSurgeryOptions,
+          toggleFollowupTreatment,
+          isFollowupTreatmentSelected,
           availableTreatmentCategories,
           cascadedTreatmentGroups,
           syncAppointmentCategorySummary,
