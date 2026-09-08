@@ -2257,31 +2257,32 @@
                   @dragleave="onCalendarCellDragLeave($event, cell.dateKey)"
                   @drop="onCalendarMonthDrop($event, cell.dateKey)"
                   :class="[
-                    'min-h-[110px] p-1.5 flex flex-col transition-colors cursor-pointer group',
+                    'min-h-[140px] p-2 flex flex-col transition-colors cursor-pointer group',
                     cell.isCurrentMonth ? 'bg-white hover:bg-slate-50/80' : 'bg-slate-50/50 text-slate-300',
                     cell.isToday ? 'ring-2 ring-inset ring-brand-500/80 bg-brand-50/20' : '',
                     dragOverDateKey === cell.dateKey ? 'ring-2 ring-brand-500 bg-brand-100/60' : ''
                   ]"
                 >
-                  <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center justify-between mb-1.5 px-0.5">
                     <span 
                       @click.stop="openNewAppointmentModalWithDate(cell.dateKey)"
                       :class="[
-                        'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-transform hover:scale-110 cursor-pointer',
-                        cell.isToday ? 'bg-brand-600 text-white' : 'text-slate-700 group-hover:text-brand-600'
+                        'w-6 h-6 rounded-full flex items-center justify-center text-xs font-black transition-all hover:scale-110 cursor-pointer shadow-2xs',
+                        cell.isToday ? 'bg-brand-600 text-white ring-2 ring-brand-300' : 'text-slate-700 group-hover:text-brand-600 group-hover:bg-slate-100'
                       ]"
                       title="點擊為此日排入新約診"
                     >
                       {{ cell.dayNum }}
                     </span>
                     
-                    <span v-if="cell.appointments.length > 0" class="text-[10px] text-slate-400 font-semibold pr-0.5">
-                      {{ cell.appointments.length }} 約
+                    <span v-if="cell.appointments.length > 0" class="text-[10.5px] text-slate-500 font-extrabold pr-0.5 flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                      <span>{{ cell.appointments.length }} 約</span>
                     </span>
                   </div>
 
-                  <div class="space-y-1 flex-1 overflow-hidden">
-                    <!-- 門診預約膠囊 (支援拖曳換日，格式：[約診時間] [病患名稱] [醫師名稱] [當日看診項目]) -->
+                  <div class="space-y-1.5 flex-1 overflow-hidden">
+                    <!-- 門診預約卡片 (支援拖曳換日，格式：[約診時間] [病患名稱] [醫師名稱] [當日看診項目]) -->
                     <div 
                       v-for="app in cell.appointments.slice(0, 3)" 
                       :key="app.id"
@@ -2290,20 +2291,27 @@
                       @dragend="onCalendarDragEnd"
                       @click.stop="openAppointmentDetail(app)"
                       :class="[
-                        'px-1.5 py-0.5 my-0.5 rounded text-[9.5px] font-bold border cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01] select-none flex items-center gap-1 overflow-hidden leading-snug shadow-2xs',
+                        'px-2 py-1.5 rounded-lg border cursor-grab active:cursor-grabbing transition-all hover:shadow-md hover:scale-[1.01] select-none block leading-tight',
                         getCalendarChipClass(app.category),
-                        draggedCalendarApp && draggedCalendarApp.id === app.id ? 'opacity-40 scale-95 ring-1 ring-brand-400' : ''
+                        draggedCalendarApp && draggedCalendarApp.id === app.id ? 'opacity-40 scale-95 ring-2 ring-brand-400' : 'shadow-2xs'
                       ]"
                       :title="`${app.time} ${app.patientName} | 醫師: ${app.doctor || '未指定'} | 項目: ${getAppTreatmentItemsText(app)} - 點擊查看`"
                     >
-                      <span class="font-mono font-black text-slate-800 flex-shrink-0 tracking-tight">{{ app.time }}</span>
-                      <span class="font-bold text-slate-900 truncate max-w-[45px] flex-shrink-0">{{ app.patientName }}</span>
-                      <span v-if="app.doctor" class="font-bold text-teal-800 bg-white/80 border border-teal-200/60 px-1 py-0.2 rounded text-[8.5px] flex-shrink-0 whitespace-nowrap">
-                        {{ app.doctor.replace(' 醫師', '').replace('醫師', '') }}
-                      </span>
-                      <span class="text-slate-700 font-semibold truncate flex-1 min-w-0" :title="getAppTreatmentItemsText(app)">
-                        {{ getAppTreatmentItemsText(app) }}
-                      </span>
+                      <!-- 第一列：[約診時間] [病患名稱] [醫師名稱] -->
+                      <div class="flex items-center justify-between gap-1">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                          <span class="font-mono font-black text-xs text-slate-800 tracking-tight flex-shrink-0">{{ app.time }}</span>
+                          <span class="font-black text-xs text-slate-900 truncate">{{ app.patientName }}</span>
+                        </div>
+                        <span v-if="app.doctor" class="font-extrabold text-[10px] text-teal-800 bg-white/90 border border-teal-200/80 px-1 py-0.2 rounded flex-shrink-0 shadow-2xs whitespace-nowrap">
+                          {{ app.doctor.replace(' 醫師', '').replace('醫師', '') }}
+                        </span>
+                      </div>
+                      <!-- 第二列：[當日看診項目] -->
+                      <div class="text-[11px] font-semibold text-slate-600 truncate mt-1 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span>
+                        <span class="truncate" :title="getAppTreatmentItemsText(app)">{{ getAppTreatmentItemsText(app) }}</span>
+                      </div>
                     </div>
 
                     <!-- 🔔 T-3 提醒啟動日膠囊 (此日為預定看診日前 3 天) -->
@@ -2313,21 +2321,21 @@
                         :key="'t3_' + rem.id"
                         @click.stop="openT3ModalWithReminder(rem)"
                         :class="rem.reminderDone ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 font-extrabold'"
-                        class="px-1.5 py-0.5 rounded text-[9px] truncate border cursor-pointer flex items-center justify-between gap-0.5 shadow-2xs transition-colors"
+                        class="px-2 py-1 rounded-md text-[10px] truncate border cursor-pointer flex items-center justify-between gap-1 shadow-2xs transition-colors"
                         :title="`🔔 T-3 提醒啟動日：${rem.patientName} (${rem.date} 由 ${rem.doctor} 看診) - 點擊開啟提醒中心`"
                       >
-                        <span class="truncate flex items-center gap-0.5">
-                          <span class="text-[9px] animate-bell-ring">🔔</span>
-                          <span>{{ rem.patientName }}</span>
+                        <span class="truncate flex items-center gap-1">
+                          <span class="text-[10px] animate-bell-ring">🔔</span>
+                          <span class="font-bold">{{ rem.patientName }} (T-3)</span>
                         </span>
-                        <span class="text-[8px] opacity-80 flex-shrink-0 font-bold">({{ rem.reminderDone ? '已發' : '待發' }})</span>
+                        <span class="text-[9px] px-1 py-0.2 rounded bg-white/70 flex-shrink-0 font-bold">{{ rem.reminderDone ? '已發' : '待發' }}</span>
                       </div>
                     </template>
 
                     <div 
                       v-if="cell.appointments.length > 3" 
                       @click.stop="openNewAppointmentModalWithDate(cell.dateKey)"
-                      class="text-[9px] text-slate-600 hover:text-brand-700 hover:bg-brand-50 font-bold px-1 text-center bg-slate-100 rounded py-0.5 cursor-pointer transition-colors"
+                      class="text-[10px] text-slate-600 hover:text-brand-700 hover:bg-brand-50 font-extrabold px-1 text-center bg-slate-100/90 border border-slate-200 rounded py-0.5 cursor-pointer transition-colors"
                       title="點擊為此日排入約診"
                     >
                       + 還有 {{ cell.appointments.length - 3 }} 筆約診...
@@ -5235,7 +5243,7 @@
               ]"
             >
               <svg class="w-3.5 h-3.5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-              從病患資料庫選擇 ({{ patients.length }}人)
+              從病患資料庫選擇 ({{ patientsSortedByChartNo.length }}人)
             </button>
             <button 
               type="button" 
@@ -5263,7 +5271,7 @@
             >
               <option value="" disabled>-- 請選擇病患 (依病歷號排序) --</option>
               <option v-for="p in patientsSortedByChartNo" :key="p.id" :value="p.id">
-                #{{ p.chartNo }} ｜ {{ p.name }} ｜ {{ p.consultCategory }} ｜ {{ p.doctor }}
+                #{{ p.chartNo }} ｜ {{ p.name }} ｜ {{ p.gender || '女' }} ｜ {{ p.phone || '無電話' }}
               </option>
             </select>
 
@@ -9536,6 +9544,15 @@
 
           appointments.value = savedApps ? JSON.parse(savedApps) : [];
           patients.value = savedPatients ? JSON.parse(savedPatients) : [];
+          if (Array.isArray(patients.value) && patients.value.length > 0) {
+            const seenChartNos = new Set();
+            patients.value = patients.value.filter(p => {
+              const k = (p.chartNo && String(p.chartNo).trim()) ? ('c_' + String(p.chartNo).trim()) : ('np_' + p.name + '_' + p.phone);
+              if (seenChartNos.has(k)) return false;
+              seenChartNos.add(k);
+              return true;
+            });
+          }
           labOrders.value = savedLabs ? JSON.parse(savedLabs) : [];
           followups.value = savedFollowups ? JSON.parse(savedFollowups) : [];
 
@@ -10388,9 +10405,16 @@
             .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
         };
 
-        // 病患名單依病歷號嚴格自然排序 (供約診選單等臨床場景使用)
+        // 病患名單依病歷號嚴格自然排序與唯一去重 (供約診選單等臨床場景使用)
         const patientsSortedByChartNo = computed(() => {
-          return [...patients.value].sort((a, b) => {
+          const map = new Map();
+          for (const p of patients.value) {
+            const key = (p.chartNo && String(p.chartNo).trim()) ? ('c_' + String(p.chartNo).trim()) : ('np_' + p.name + '_' + p.phone);
+            if (!map.has(key)) {
+              map.set(key, p);
+            }
+          }
+          return Array.from(map.values()).sort((a, b) => {
             const cA = (a.chartNo || '').toString();
             const cB = (b.chartNo || '').toString();
             return cA.localeCompare(cB, undefined, { numeric: true, sensitivity: 'base' });
@@ -10847,7 +10871,7 @@
           let targetPatientId = null;
           let targetPatientName = '';
           let targetPhone = '';
-
+          let targetChartNo = '';
           let targetPatientObj = null;
 
           if (appointmentPatientMode.value === 'new') {
@@ -10860,12 +10884,13 @@
             }
 
             const chartNoVal = (newAppointmentForm.value.newPatientChartNo || '').trim() || ('C' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + String(Math.floor(Math.random()*900+100)));
+            targetChartNo = chartNoVal;
             const lineIdVal = (newAppointmentForm.value.newPatientLineId || '').trim();
             const pipelineStageVal = (newAppointmentForm.value.newPatientPipelineStage || '').trim() || '初診諮詢';
             const leadDocVal = Array.isArray(newAppointmentForm.value.newPatientLeadDoctors)
               ? newAppointmentForm.value.newPatientLeadDoctors.join(', ')
               : ((newAppointmentForm.value.newPatientLeadDoctors || '').trim() || (newAppointmentForm.value.doctor || '').replace(' 醫師', '') || 'TE');
-            const chiefComplaintVal = (newAppointmentForm.value.newPatientChiefComplaint || '').trim() || newAppointmentForm.value.notes || `${newAppointmentForm.value.category} 初診諮詢與評估`;
+            const chiefComplaintVal = (newAppointmentForm.value.newPatientChiefComplaint || '').trim() || newAppointmentForm.value.notes || `${newAppointmentForm.value.category || '初診'} 諮詢與評估`;
             const caseMgr = (currentUser.value && currentUser.value.name) ? currentUser.value.name : '螺絲小姐';
 
             const drugAllergies = newAppointmentForm.value.newPatientDrugAllergies
@@ -10880,38 +10905,55 @@
               legacyAlerts.forEach(a => { if (!combinedAlerts.includes(a)) combinedAlerts.push(a); });
             }
 
-            const newP = {
-              id: 'p_' + Date.now(),
-              chartNo: chartNoVal,
-              name: rawName,
-              gender: newAppointmentForm.value.newPatientGender || '女',
-              age: 35,
-              phone: rawPhone,
-              lineId: lineIdVal,
-              leadStatus: newAppointmentForm.value.newPatientLeadStatus || '治療中',
-              consultCategory: newAppointmentForm.value.category,
-              doctor: newAppointmentForm.value.doctor,
-              leadDoctors: leadDocVal,
-              caseManager: caseMgr,
-              projectTotal: 0,
-              paidAmount: 0,
-              pipelineStage: pipelineStageVal,
-              drugAllergies: drugAllergies,
-              systemicDiseases: systemicDiseases,
-              medicalAlerts: combinedAlerts,
-              chiefComplaint: chiefComplaintVal,
-              consultNotes: `${caseMgr}建立：已安排約診於 ${newAppointmentForm.value.date} ${newAppointmentForm.value.time}。`,
-              paymentHistory: []
-            };
+            // 檢查是否已有相同病歷號或姓名+電話的病患，避免重複新增相同的病人
+            const existingMatch = patients.value.find(p => 
+              (p.chartNo && String(p.chartNo).trim() === targetChartNo) || 
+              (p.name === rawName && p.phone === rawPhone)
+            );
 
-            // 存入病患庫
-            patients.value.unshift(newP);
-            targetPatientObj = newP;
-            targetPatientId = newP.id;
-            targetPatientName = newP.name;
-            targetPhone = newP.phone;
+            if (existingMatch) {
+              existingMatch.name = rawName;
+              existingMatch.phone = rawPhone;
+              if (lineIdVal) existingMatch.lineId = lineIdVal;
+              if (newAppointmentForm.value.newPatientGender) existingMatch.gender = newAppointmentForm.value.newPatientGender;
+              if (combinedAlerts.length > 0) existingMatch.medicalAlerts = combinedAlerts;
+              targetPatientObj = existingMatch;
+              targetPatientId = existingMatch.id;
+              targetPatientName = existingMatch.name;
+              targetPhone = existingMatch.phone;
+              targetChartNo = existingMatch.chartNo;
+            } else {
+              const newP = {
+                id: 'p_' + Date.now(),
+                chartNo: targetChartNo,
+                name: rawName,
+                gender: newAppointmentForm.value.newPatientGender || '女',
+                age: 35,
+                phone: rawPhone,
+                lineId: lineIdVal,
+                leadStatus: newAppointmentForm.value.newPatientLeadStatus || '治療中',
+                consultCategory: newAppointmentForm.value.category || '一般門診',
+                doctor: newAppointmentForm.value.doctor,
+                leadDoctors: leadDocVal,
+                caseManager: caseMgr,
+                projectTotal: 0,
+                paidAmount: 0,
+                pipelineStage: pipelineStageVal,
+                drugAllergies: drugAllergies,
+                systemicDiseases: systemicDiseases,
+                medicalAlerts: combinedAlerts,
+                chiefComplaint: chiefComplaintVal,
+                consultNotes: `${caseMgr}建立：已安排約診於 ${newAppointmentForm.value.date} ${newAppointmentForm.value.time}。`,
+                paymentHistory: []
+              };
 
-            alert(`✨ 已成功在「病患資料庫」為【${newP.name}】建立個案資料管理與病歷號 #${newP.chartNo}，並指派給${caseMgr}！`);
+              patients.value.unshift(newP);
+              targetPatientObj = newP;
+              targetPatientId = newP.id;
+              targetPatientName = newP.name;
+              targetPhone = newP.phone;
+            }
+
           } else {
             // 從既有庫選取
             if (!newAppointmentForm.value.patientId) {
@@ -10927,8 +10969,9 @@
             targetPatientId = selected.id;
             targetPatientName = selected.name;
             targetPhone = selected.phone;
+            targetChartNo = selected.chartNo || '';
 
-            // 同步更新既有病患之藥物過敏史與全身性疾病手術風險 (支援在約診彈窗即時修改並同步回病患資料庫)
+            // 同步更新既有病患之藥物過敏史與全身性疾病手術風險
             const parsedDrug = newAppointmentForm.value.existingPatientDrugAllergies
               ? newAppointmentForm.value.existingPatientDrugAllergies.split(/[,，、]/).map(s => s.trim()).filter(Boolean)
               : [];
@@ -10969,7 +11012,7 @@
             chair: assignedChair,
             patientId: targetPatientId,
             patientName: targetPatientName,
-            patientChartNo: (appointmentPatientMode.value === 'existing' ? (selectedPatient.value?.chartNo || patients.value.find(p => String(p.id) === String(targetPatientId))?.chartNo || '') : chartNoVal),
+            patientChartNo: targetChartNo,
             phone: targetPhone,
             category: categorySummary,
             treatmentCategories: selectedCats,
@@ -10989,40 +11032,35 @@
           if (keepOpenForNextDoctor) {
             // 自動計算接續時段，保持彈窗開啟方便排同日下一位醫師
             const [hh, mm] = newApp.time.split(':').map(Number);
-            const dur = Number(newApp.duration) || 30;
+            const dur = Number(newApp.duration) || 60;
             const nextTotalMinutes = (hh * 60 + mm + dur) % (24 * 60);
             const nextH = String(Math.floor(nextTotalMinutes / 60)).padStart(2, '0');
             const nextM = String(nextTotalMinutes % 60).padStart(2, '0');
 
-            // 模式固定為既有病患與同日
-            appointmentPatientMode.value = 'existing';
-            newAppointmentForm.value.patientId = targetPatientId;
+            // 保留病患個案資料，但初始化清空下方預約醫師、時間、看診項目等表單
+            if (appointmentPatientMode.value === 'existing') {
+              newAppointmentForm.value.patientId = targetPatientId;
+            }
             newAppointmentForm.value.time = `${nextH}:${nextM}`;
+            newAppointmentForm.value.duration = 60;
+            newAppointmentForm.value.treatmentCategories = [];
+            newAppointmentForm.value.treatmentItems = [];
+            newAppointmentForm.value.customCategoryInput = '';
+            newAppointmentForm.value.customItemInput = '';
+            newAppointmentForm.value.category = '';
             newAppointmentForm.value.notes = '';
-            if (targetPatientObj) {
-              newAppointmentForm.value.existingPatientDrugAllergies = targetPatientObj.drugAllergies ? targetPatientObj.drugAllergies.join(', ') : '';
-              newAppointmentForm.value.existingPatientSystemicDiseases = targetPatientObj.systemicDiseases ? targetPatientObj.systemicDiseases.join(', ') : '';
+
+            // 智慧切換至診所其他看診醫師
+            const otherDoc = clinicDoctors.value.find(d => d.name !== newApp.doctor);
+            if (otherDoc) {
+              newAppointmentForm.value.doctor = otherDoc.name;
+              newAppointmentForm.value.chair = getDefaultChairForDoctor(otherDoc.name);
             }
 
-            // 智慧切換建議醫師 (若上一位是 TE 醫師，建議 銘 醫師；反之亦然)
-            if (newApp.doctor === 'TE 醫師') {
-              newAppointmentForm.value.doctor = '銘 醫師';
-              newAppointmentForm.value.chair = getDefaultChairForDoctor('銘 醫師');
-              newAppointmentForm.value.treatmentCategories = ['GP'];
-              newAppointmentForm.value.treatmentItems = ['TC'];
-              syncAppointmentCategorySummary();
-            } else if (newApp.doctor === '銘 醫師') {
-              newAppointmentForm.value.doctor = 'TE 醫師';
-              newAppointmentForm.value.chair = getDefaultChairForDoctor('TE 醫師');
-              newAppointmentForm.value.treatmentCategories = ['植牙'];
-              newAppointmentForm.value.treatmentItems = ['植牙'];
-              syncAppointmentCategorySummary();
-            }
-
-            alert(`✅ 第 1 筆約診已成功【逐條排入行事曆】：\n【${newApp.patientName}】於 ${newApp.date} ${newApp.time} 由 ${newApp.doctor} (${newApp.chair}) 看診！\n\n👉 視窗已自動為您推移接續時間至 ${nextH}:${nextM}，請直接選擇第 2 位接續看診的醫師及項目。`);
+            alert(`✅ 約診已成功排入行事曆！\n【${newApp.patientName}】於 ${newApp.date} ${newApp.time} 由 ${newApp.doctor} (${newApp.chair}) 看診。\n\n👉 已為您保留病患資料，並已自動推移時段至 ${nextH}:${nextM}，看診項目已初始化重填，請接續選擇下一位醫師及診療項目。`);
           } else {
             showNewAppointmentModal.value = false;
-            alert(`✅ 已成功為【${newApp.patientName}】安排 ${newApp.date} ${newApp.time} 由 ${newApp.doctor} 看診的排程，已逐條獨立排入行事曆！`);
+            alert(`✅ 已成功為【${newApp.patientName}】建立約診排程（${newApp.date} ${newApp.time} 由 ${newApp.doctor} 看診），已獨立排入行事曆！`);
           }
         };
 

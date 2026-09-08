@@ -1,20 +1,36 @@
 /* An oversized orange companion, with the unlock controls always reachable. */
+body:has(.keeper-lock-screen) {
+  overflow: hidden !important;
+}
+
 .keeper-lock-screen {
   position: fixed; inset: 0; z-index: 99999; isolation: isolate;
-  overflow-x: hidden; overflow-y: auto; min-height: 100dvh; color: #fff5e7;
+  overflow: hidden; width: 100vw; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; color: #fff5e7;
   background: rgba(15, 19, 24, .96); backdrop-filter: blur(22px);
+  /* 🐱 趣味逗貓棒鼠標游標 (Cat Teaser Wand Cursor) */
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'><g transform='rotate(-15 18 18)'><path d='M32 34 L14 16' stroke='%23f59e0b' stroke-width='2.8' stroke-linecap='round'/><path d='M14 16 L9 11' stroke='%23fde68a' stroke-width='1.5'/><circle cx='9' cy='11' r='2' fill='%23fbbf24'/><path d='M9 11 Q5 4 1 6 Q3 10 9 11' fill='%23f43f5e'/><path d='M9 11 Q3 9 1 14 Q6 14 9 11' fill='%2306b6d4'/><path d='M9 11 Q7 15 4 19 Q9 16 9 11' fill='%23a855f7'/><circle cx='9' cy='11' r='0.8' fill='%23fff'/></g></svg>") 3 3, auto;
+}
+.keeper-lock-screen * {
+  box-sizing: border-box;
+}
+.keeper-lock-screen input {
+  cursor: text !important;
+}
+.keeper-lock-screen button {
+  cursor: pointer !important;
 }
 .keeper-lock-screen::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse at 72% 80%, #bc702330, transparent 58%);
 }
-.keeper-caption { position: absolute; left: 7vw; top: 7vh; z-index: 2; }
+.keeper-caption { position: absolute; left: 7vw; top: 7vh; z-index: 2; pointer-events: none; }
 .keeper-caption small { display: block; color: #d5b591; font-size: 11px; letter-spacing: .24em; }
 .keeper-caption h2 { margin-top: 12px; font-size: clamp(23px, 3vw, 42px); font-weight: 800; letter-spacing: -.04em; }
 .keeper-caption p { margin-top: 10px; color: #a9a39b; font-size: 13px; }
 .keeper-cat-stage {
   position: absolute; right: -5vw; bottom: 0; width: min(78vw, 1100px);
-  height: 95dvh; pointer-events: none; z-index: 1;
+  height: 95dvh; max-height: 100vh; pointer-events: none; z-index: 1;
+  overflow: visible;
   animation: keeper-arrive 2.4s cubic-bezier(.22,.66,.25,1) both;
 }
 .keeper-cat-stage::after {
