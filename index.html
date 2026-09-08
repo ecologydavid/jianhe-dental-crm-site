@@ -1893,7 +1893,7 @@
                       <div class="flex items-center justify-between">
                         <div class="flex items-center gap-1.5">
                           <span class="font-black text-slate-900 text-sm">{{ rem.patientName }}</span>
-                          <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono">#{{ rem.patientChartNo || '健和' }}</span>
+                          <span v-if="rem.patientChartNo" class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo }}</span>
                         </div>
                         <span :class="rem.stageBadge" class="px-2 py-0.5 rounded text-[10px] font-bold border inline-flex items-center gap-1">
                           <span v-if="rem.stageLabel && rem.stageLabel.includes('🔔')" class="animate-bell-ring text-[11px]">🔔</span>
@@ -1907,12 +1907,14 @@
                           <span class="font-extrabold text-slate-900">{{ rem.date }} ({{ rem.time }})</span>
                         </div>
                         <div class="flex items-center justify-between">
-                          <span class="text-slate-500 font-bold">醫師與診間：</span>
-                          <span class="font-bold text-teal-800">{{ rem.doctor }} · {{ rem.chair }}</span>
+                          <span class="text-slate-500 font-bold">醫師與診療項目：</span>
+                          <span class="font-bold text-teal-800">{{ rem.doctor }} · {{ rem.category || '牙科診療' }}</span>
                         </div>
-                        <div class="flex items-center justify-between">
-                          <span class="text-slate-500 font-bold">治療項目：</span>
-                          <span class="font-bold text-slate-900">{{ rem.category }}</span>
+                        <div class="flex items-center justify-between gap-1">
+                          <span class="text-slate-500 font-bold flex-shrink-0">當日看診項目：</span>
+                          <span class="font-bold text-slate-900 truncate text-right max-w-[170px]" :title="rem.treatmentItemsText || ((rem.treatmentItems && rem.treatmentItems.length) ? rem.treatmentItems.join('、') : (rem.procedure || rem.category || '一般門診'))">
+                            {{ rem.treatmentItemsText || ((rem.treatmentItems && rem.treatmentItems.length) ? rem.treatmentItems.join('、') : (rem.procedure || rem.category || '一般門診')) }}
+                          </span>
                         </div>
                         <div class="flex items-center justify-between pt-0.5 border-t border-slate-100">
                           <span class="text-amber-800 font-extrabold flex items-center gap-1 whitespace-nowrap">
@@ -1934,35 +1936,39 @@
                       </div>
                     </div>
 
-                    <!-- 底部操作按鈕組 -->
-                    <div class="mt-3 pt-2.5 border-t border-slate-200/70 flex items-center justify-between gap-1.5">
+                    <!-- 底部操作按鈕組 (三顆平衡整齊排版) -->
+                    <div class="mt-3 pt-2.5 border-t border-slate-200/70 flex items-center gap-1.5">
                       <button 
+                        type="button"
                         @click="copyLineTemplate(rem)"
-                        class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
+                        class="flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300/80 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer active:scale-95 truncate"
                         title="一鍵複製專屬 LINE 提醒範本"
                       >
                         <span>📋</span>
-                        <span>複製 LINE 範本</span>
+                        <span class="truncate">複製範本</span>
                       </button>
 
-                      <div class="flex items-center gap-1">
-                        <button 
-                          @click="toggleReminderStatus(rem)"
-                          :class="rem.reminderDone ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-brand-600 hover:bg-brand-700 text-white'"
-                          class="px-2.5 py-1 rounded-lg text-xs font-bold transition-colors"
-                          :title="rem.reminderDone ? '點擊重設為待處理' : '標記為已發送提醒'"
-                        >
-                          {{ rem.reminderDone ? '↩️ 設為待處理' : '✅ 標記已提醒' }}
-                        </button>
-                        <button 
-                          v-if="rem.patientId" 
-                          @click="viewPatientDetail(rem.patientId)"
-                          class="p-1 text-slate-400 hover:text-brand-600 rounded transition-colors"
-                          title="開啟個案資料管理"
-                        >
-                          📁
-                        </button>
-                      </div>
+                      <button 
+                        type="button"
+                        @click="toggleReminderStatus(rem)"
+                        :class="rem.reminderDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300' : 'bg-brand-600 hover:bg-brand-700 text-white shadow-2xs'"
+                        class="flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 truncate"
+                        :title="rem.reminderDone ? '點擊重設為待處理' : '標記為已發送提醒'"
+                      >
+                        <span>{{ rem.reminderDone ? '↩️' : '✅' }}</span>
+                        <span class="truncate">{{ rem.reminderDone ? '待處理' : '已發送' }}</span>
+                      </button>
+
+                      <button 
+                        v-if="rem.patientId" 
+                        type="button"
+                        @click="viewPatientDetail(rem.patientId)"
+                        class="py-1.5 px-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-brand-700 border border-slate-200 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer active:scale-95 flex-shrink-0"
+                        title="開啟病患個案完整資料夾"
+                      >
+                        <span>📁</span>
+                        <span class="text-xs font-bold">資料夾</span>
+                      </button>
                     </div>
                   </div>
 
@@ -5078,7 +5084,7 @@
               <div class="space-y-1.5 flex-1 min-w-[240px]">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="font-black text-slate-900 text-base">{{ rem.patientName }}</span>
-                  <span class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo || '病歷號' }}</span>
+                  <span v-if="rem.patientChartNo" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo }}</span>
                   <span :class="rem.stageBadge" class="px-2.5 py-0.5 rounded text-xs font-black border inline-flex items-center gap-1">
                     <span v-if="rem.stageLabel && rem.stageLabel.includes('🔔')" class="animate-bell-ring text-xs">🔔</span>
                     <span>{{ (rem.stageLabel || '').replace('🔔', '').trim() }}</span>
@@ -5105,14 +5111,14 @@
                       <span class="text-slate-500 font-normal ml-1">({{ rem.duration || 60 }}分)</span>
                     </div>
                     <div>
-                      <span class="text-slate-400 font-medium">主責醫師與診間：</span>
-                      <strong class="text-teal-800">{{ rem.doctor }}</strong> · <span>{{ rem.chair }}</span>
+                      <span class="text-slate-400 font-medium">醫師與診療項目：</span>
+                      <strong class="text-teal-800">{{ rem.doctor }}</strong> · <span class="font-bold text-slate-800">{{ rem.category || '牙科診療' }}</span>
                     </div>
                   </div>
                   <div>
-                    <span class="text-slate-400 font-medium">預定診療項目：</span>
-                    <span class="font-bold text-slate-800">{{ rem.category }}</span>
-                    <span class="text-slate-500 ml-1">（{{ rem.notes || '自費專案' }}）</span>
+                    <span class="text-slate-400 font-medium">當日看診項目：</span>
+                    <span class="font-bold text-slate-800">{{ rem.treatmentItemsText || ((rem.treatmentItems && rem.treatmentItems.length) ? rem.treatmentItems.join('、') : (rem.procedure || rem.category || '一般門診')) }}</span>
+                    <span v-if="rem.notes" class="text-slate-500 ml-1">（{{ rem.notes }}）</span>
                   </div>
                   <div class="pt-1 border-t border-slate-100 flex items-center justify-between">
                     <span class="text-amber-800 font-extrabold flex items-center gap-1">
@@ -5135,34 +5141,37 @@
                 </div>
               </div>
 
-              <!-- 右側操作按鈕區 -->
-              <div class="flex sm:flex-col items-center sm:items-end gap-2 flex-shrink-0 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <!-- 右側操作按鈕區 (三顆整齊統一排版) -->
+              <div class="flex sm:flex-col items-stretch sm:justify-center gap-2 flex-shrink-0 w-full sm:w-40 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:border-slate-100 sm:pl-3">
                 <button 
                   type="button"
                   @click="copyLineTemplate(rem)"
-                  class="flex-1 sm:flex-none px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   title="複製此病患專屬 LINE 衛教提醒訊息"
                 >
                   <span>📋</span>
-                  <span>複製 LINE 範本</span>
+                  <span class="whitespace-nowrap">複製 LINE 範本</span>
                 </button>
 
                 <button 
                   type="button"
                   @click="toggleReminderStatus(rem)"
-                  :class="rem.reminderDone ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-brand-600 hover:bg-brand-700 text-white'"
-                  class="flex-1 sm:flex-none px-3.5 py-2 rounded-lg text-xs font-black transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  :class="rem.reminderDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300' : 'bg-brand-600 hover:bg-brand-700 text-white shadow-xs'"
+                  class="w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 >
-                  <span>{{ rem.reminderDone ? '↩️ 設為待處理' : '✅ 標記已發送' }}</span>
+                  <span>{{ rem.reminderDone ? '↩️' : '✅' }}</span>
+                  <span class="whitespace-nowrap">{{ rem.reminderDone ? '設為待處理' : '標記已發送' }}</span>
                 </button>
 
                 <button 
                   v-if="rem.patientId"
                   type="button"
                   @click="showT3ReminderModal = false; viewPatientDetail(rem.patientId)"
-                  class="px-2.5 py-1 text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded text-xs font-bold transition-colors cursor-pointer"
+                  class="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-brand-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+                  title="開啟病患個案完整資料夾"
                 >
-                  📁 開啟病患資料夾 →
+                  <span>📁</span>
+                  <span class="whitespace-nowrap">開啟個案資料夾</span>
                 </button>
               </div>
             </div>
@@ -9999,7 +10008,12 @@
           return appointments.value.map(app => {
             const t3 = app.t3Date || getTMinus3Date(app.date);
             const diff = getDaysDiff(t3, baseDate);
-            const patient = patients.value.find(p => p.id === app.patientId) || {};
+            const patient = patients.value.find(p => (app.patientId && String(p.id) === String(app.patientId)) || (app.patientName && p.name === app.patientName)) || {};
+            const chartNo = patient.chartNo || app.patientChartNo || app.chartNo || '';
+            const items = (Array.isArray(app.treatmentItems) && app.treatmentItems.length > 0)
+              ? app.treatmentItems
+              : (app.procedure ? app.procedure.split(/[,、，\s]+/).filter(Boolean) : (app.category ? [app.category] : []));
+            const treatmentItemsText = items.length > 0 ? items.join('、') : (app.procedure || app.category || '一般門診');
             
             let stage = 'upcoming';
             let stageLabel = `⏳ 倒數 ${diff} 天`;
@@ -10018,6 +10032,9 @@
             return {
               ...app,
               patient,
+              patientChartNo: chartNo,
+              treatmentItems: items,
+              treatmentItemsText,
               t3Date: t3,
               diffDays: diff,
               stage,
@@ -10034,12 +10051,15 @@
           });
         });
 
-        const pendingT3Reminders = computed(() => allT3Reminders.value.filter(r => !r.reminderDone));
-        const pendingT3Count = computed(() => pendingT3Reminders.value.length);
+        // 真正的到診日 - 3 天（今日已達提醒啟動日）
         const todayT3Reminders = computed(() => allT3Reminders.value.filter(r => r.stage === 'today'));
-        const overdueT3Reminders = computed(() => allT3Reminders.value.filter(r => r.stage === 'overdue'));
+        const overdueT3Reminders = computed(() => allT3Reminders.value.filter(r => r.stage === 'overdue' && !r.reminderDone));
         const upcomingT3Reminders = computed(() => allT3Reminders.value.filter(r => r.stage === 'upcoming'));
         const doneT3Reminders = computed(() => allT3Reminders.value.filter(r => r.reminderDone));
+
+        // 待處理名單：真正到達提醒啟動日（今日或逾期未發）且尚未標記完成的項目
+        const pendingT3Reminders = computed(() => allT3Reminders.value.filter(r => (r.stage === 'today' || r.stage === 'overdue') && !r.reminderDone));
+        const pendingT3Count = computed(() => pendingT3Reminders.value.length);
 
         const displayedDashboardT3List = computed(() => {
           if (dashboardT3Tab.value === 'pending') return pendingT3Reminders.value;
@@ -10076,6 +10096,8 @@
           res = res.replace(/\{doctor\}/g, rem.doctor || '主治醫師');
           res = res.replace(/\{chair\}/g, rem.chair || '診療診間');
           res = res.replace(/\{category\}/g, rem.category || '牙科診療');
+          res = res.replace(/\{treatmentItems\}/g, rem.treatmentItemsText || rem.category || '牙科診療');
+          res = res.replace(/\{procedure\}/g, rem.treatmentItemsText || rem.procedure || rem.category || '一般診療');
           res = res.replace(/\{medicalAlerts\}/g, alertText);
           res = res.replace(/\{t3Date\}/g, rem.t3Date || rem.date || '');
           res = res.replace(/\{clinicName\}/g, clinic.name || '或心設計');
@@ -10801,6 +10823,7 @@
             chair: assignedChair,
             patientId: targetPatientId,
             patientName: targetPatientName,
+            patientChartNo: (appointmentPatientMode.value === 'existing' ? (selectedPatient.value?.chartNo || patients.value.find(p => String(p.id) === String(targetPatientId))?.chartNo || '') : chartNoVal),
             phone: targetPhone,
             category: categorySummary,
             treatmentCategories: selectedCats,
@@ -12065,6 +12088,9 @@
               calendarViewMode.value = 'day';
             } else if (testMode === 'dashboard') {
               currentTab.value = 'dashboard';
+            } else if (testMode === 't3') {
+              currentTab.value = 'dashboard';
+              openT3ModalWithFilter('pending');
             } else if (testMode === 'subscription') {
               currentTab.value = 'subscription';
             } else if (testMode === 'subscription_modal') {
