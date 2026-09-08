@@ -742,28 +742,20 @@
   <div id="app" v-cloak :class="[!isBellAnimationEnabled ? 'disable-bell-animation' : '']" class="flex h-screen w-screen overflow-hidden bg-slate-50">
 
     <!-- ============================================== -->
-    <!-- Verified cloud login; local mode remains available for backup/migration. -->
+    <!-- Sign in with the clinic account. Connection settings live in the admin panel. -->
     <div v-if="!currentUser" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-5 overflow-y-auto">
       <section class="w-full max-w-md bg-white rounded-3xl p-7 shadow-xl space-y-4 my-auto">
         <h1 class="text-xl font-black">健和個案管理系統</h1>
-        <p class="text-sm text-slate-600">登入診所雲端帳號，在不同電腦使用同一份資料。</p>
-        <p role="status" class="text-xs p-3 rounded-xl bg-amber-50 text-amber-900">{{ supabaseSyncMsg }}</p>
-        <button v-if="googleLoginEnabled" @click="loginWithGoogle" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold">使用 Google 登入雲端</button>
-        <p v-else class="text-xs text-slate-500">請使用診所 Email 與系統專用密碼。Google 一鍵登入尚未設定。</p>
-        <details class="text-sm" :open="!googleLoginEnabled">
-          <summary class="cursor-pointer py-2">使用診所 Email／密碼登入</summary>
-          <label class="block mt-2">Email<input type="email" v-model="cloudEmail" autocomplete="username" class="w-full border rounded-lg p-2 mt-1" /></label>
-          <label class="block mt-2">密碼<input type="password" v-model="cloudPassword" autocomplete="current-password" @keyup.enter="saveSupabaseCredentials" class="w-full border rounded-lg p-2 mt-1" /></label>
-          <button @click="saveSupabaseCredentials" class="w-full mt-3 p-2 bg-emerald-700 text-white rounded-lg">登入並同步</button>
-        </details>
-        <details class="text-sm">
-          <summary class="cursor-pointer py-2">首次設定雲端連線</summary>
-          <label class="block mt-2">Supabase 專案網址<input v-model="supabaseUrlInput" placeholder="https://專案代碼.supabase.co" class="w-full border rounded-lg p-2 mt-1" /></label>
-          <label class="block mt-2">公開金鑰<input v-model="supabaseKeyInput" placeholder="publishable 或 anon key" class="w-full border rounded-lg p-2 mt-1" /></label>
-          <p class="text-xs text-slate-500 mt-2">正式部署會共用同一組公開設定，換電腦不需重設。</p>
-        </details>
-        <button @click="enterLocalMode" class="text-sm underline text-slate-600">開啟此裝置的本機資料／匯出備份</button>
-        <p class="text-xs text-slate-500">本機模式不代表帳號登入成功，也不會自動同步到其他裝置。</p>
+        <form @submit.prevent="submitLogin" class="space-y-5 pt-2" :aria-busy="loginBusy">
+          <label class="block text-sm font-bold text-slate-700">帳號
+            <input type="email" v-model="cloudEmail" autocomplete="username" placeholder="請輸入 Email" required :disabled="loginBusy" class="w-full border border-slate-300 rounded-xl p-3 mt-2 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" />
+          </label>
+          <label class="block text-sm font-bold text-slate-700">密碼
+            <input type="password" v-model="cloudPassword" autocomplete="current-password" placeholder="請輸入密碼" required :disabled="loginBusy" class="w-full border border-slate-300 rounded-xl p-3 mt-2 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" />
+          </label>
+          <p v-if="loginError" role="alert" class="text-sm text-rose-700">{{ loginError }}</p>
+          <button type="submit" :disabled="loginBusy" class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white font-bold rounded-xl transition-colors">{{ loginBusy ? '登入中…' : '登入' }}</button>
+        </form>
       </section>
     </div>
 
@@ -8021,6 +8013,18 @@
       setup() {
         // Identity is assigned only after Supabase verifies the user and membership.
         const currentUser = ref(null);
+        const loginBusy = ref(false), loginError = ref('');
+        const submitLogin = async () => {
+          if (loginBusy.value) return;
+          loginBusy.value = true; loginError.value = '';
+          try {
+            await saveSupabaseCredentials();
+            if (!currentUser.value) loginError.value = supabaseSyncMsg.value.includes('取得診所存取權')
+              ? '此帳號尚未開通，請聯絡管理員。' : '登入失敗，請確認帳號、密碼與網路連線後重試。';
+          } catch {
+            loginError.value = '目前無法登入，請稍後再試。';
+          } finally { loginBusy.value = false; }
+        };
         const googleLoginEnabled = Boolean(window.CLINIC_CONFIG?.googleEnabled);
         const enterLocalMode = () => {
           currentUser.value = { name: '本機模式', email: '僅此裝置，尚未登入雲端', picture: '', loginType: 'local' };
@@ -12418,7 +12422,7 @@
           clearAllCaseData,
           // 🔐 診所登入系統與 Google 第三方登入
           currentUser,
-          loginWithGoogle, enterLocalMode, logout, googleLoginEnabled,
+          loginWithGoogle, enterLocalMode, logout, googleLoginEnabled, submitLogin, loginBusy, loginError,
 
         };
       }
