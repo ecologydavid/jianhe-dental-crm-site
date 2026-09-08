@@ -26,7 +26,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="cloud-sync.js"></script>
   <!-- Google 官方第三方登入 SDK (Google Identity Services) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="app-config.js"></script>
   <!-- Google Fonts: Inter / Plus Jakarta Sans & Noto Sans TC -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -742,243 +742,30 @@
   <div id="app" v-cloak :class="[!isBellAnimationEnabled ? 'disable-bell-animation' : '']" class="flex h-screen w-screen overflow-hidden bg-slate-50">
 
     <!-- ============================================== -->
-    <!-- 🔐 診所工作台 Google 第三方登入系統 (Gateway Portal) -->
-    <!-- ============================================== -->
-    <div 
-      v-if="!currentUser" 
-      v-cloak 
-      class="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 p-4 sm:p-6 overflow-y-auto"
-    >
-      <!-- 背景光暈飾紋 -->
-      <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl"></div>
-      </div>
-
-      <div class="relative w-full max-w-md bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/20 text-center">
-        <!-- LOGO & 品牌 -->
-        <div class="flex justify-center mb-4">
-          <div class="w-16 h-16 rounded-2xl bg-[#F7F7F7] border border-slate-200/90 flex items-center justify-center p-2 shadow-sm relative">
-            <img 
-              src="logo.png" 
-              alt="或心設計" 
-              class="w-full h-full object-contain" 
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-            />
-            <div style="display: none;" class="w-full h-full flex items-center justify-center bg-[#F7F7F7]">
-              <svg class="w-10 h-10" viewBox="0 0 100 100" fill="none">
-                <circle cx="50" cy="50" r="38" stroke="#111827" stroke-width="4.5" stroke-dasharray="205 32" stroke-dashoffset="15" stroke-linecap="round" />
-                <circle cx="86" cy="50" r="3.5" fill="#111827" />
-                <text x="56" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="28" fill="#111827" text-anchor="middle">re</text>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <h1 class="text-xl font-black text-slate-900 tracking-tight">或心設計有限公司</h1>
-        <p class="text-xs font-extrabold text-emerald-700 mt-0.5">健和牙醫 · 個案管理體系統</p>
-        <p class="text-[11px] text-slate-500 mt-2">臨床個案資料安全防護機制 ｜ 請登入身分存取工作台</p>
-
-        <!-- ⚡ 快速 Google 帳號授權通行證 (專為 xun0519@gmail.com 快速登入) -->
-        <div class="mt-6 p-4 bg-emerald-50/90 border border-emerald-200/90 rounded-2xl shadow-sm text-left">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-400 shadow-sm flex-shrink-0 bg-white">
-              <img 
-                src="user_avatar.png" 
-                alt="Xun" 
-                class="w-full h-full object-cover" 
-                onerror="this.src='https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=face'"
-              />
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-black text-slate-900">Xun (個案管理師)</span>
-                <span class="px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-bold">已授權就緒</span>
-              </div>
-              <div class="text-[11px] text-slate-600 font-mono truncate">xun0519@gmail.com</div>
-              <div class="text-[10px] text-emerald-700 font-bold mt-0.5">健和牙醫 · 個案管理權限已核准</div>
-            </div>
-          </div>
-          
-          <button 
-            type="button" 
-            @click="quickAuthorizeGoogle('xun0519@gmail.com')" 
-            class="w-full mt-3 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-xs rounded-xl shadow-md hover:shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
-          >
-            <span>⚡ 一鍵快速授權進入工作台</span>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-          </button>
-        </div>
-
-        <!-- 選擇其他 Google 帳戶按鈕 -->
-        <div class="mt-3 flex flex-col items-center justify-center gap-1.5">
-          <button 
-            type="button"
-            @click="openGoogleAccountModal" 
-            class="w-full max-w-[280px] py-2 px-3 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-full border border-slate-200 shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer hover:border-slate-300"
-          >
-            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-            </svg>
-            <span>切換其他 Google 帳戶</span>
-          </button>
-        </div>
-
-        <!-- 自訂 Google Client ID 展開區 (方便使用者綁定自有 Google Cloud OAuth) -->
-        <div class="pt-4">
-          <button 
-            type="button" 
-            @click="showClientIdConfig = !showClientIdConfig" 
-            class="text-[10px] text-slate-400 hover:text-slate-600 underline flex items-center justify-center gap-1 mx-auto cursor-pointer"
-          >
-            <span>⚙️ 進階：Google Cloud OAuth 憑證設定</span>
-          </button>
-          <div v-if="showClientIdConfig" class="mt-2.5 p-3 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs space-y-2">
-            <p class="text-[10px] text-slate-500">若需使用 Google 原生彈窗授權，請至 Google Cloud Console 建立 OAuth Client ID 並加入此網域為授權來源。</p>
-            <label class="block text-[11px] font-bold text-slate-700">Google OAuth 2.0 Client ID：</label>
-            <input 
-              type="text" 
-              v-model="googleClientId" 
-              placeholder="例如：xxxx.apps.googleusercontent.com" 
-              class="w-full p-2 bg-white border border-slate-300 rounded-lg text-[11px] font-mono outline-none focus:border-brand-500" 
-            />
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] text-slate-400">已自動儲存於本機</span>
-              <button 
-                type="button" 
-                @click="saveGoogleClientId" 
-                class="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white rounded text-[11px] font-bold cursor-pointer"
-              >儲存並套用</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[10px] text-slate-400">
-          <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-          <span>SSL 256 位元加密 · 符合 HIPAA 與醫療個人資料保護法規</span>
-        </div>
-      </div>
-
-      <!-- ============================================== -->
-      <!-- 🌐 Google 帳戶授權選擇彈窗 (Google Account Selector) -->
-      <!-- ============================================== -->
-      <div 
-        v-if="showGoogleAccountModal" 
-        v-cloak 
-        class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
-        @click.self="showGoogleAccountModal = false"
-      >
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl border border-slate-200 text-left animate-in fade-in zoom-in-95 duration-150">
-          <!-- 頂部 Google 標誌與標題 -->
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div class="flex items-center gap-2.5">
-              <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-              <div>
-                <h3 class="font-bold text-slate-900 text-sm">選擇 Google 帳戶</h3>
-                <p class="text-[10px] text-slate-400">登入 或心設計 · 健和牙醫個案管理系統</p>
-              </div>
-            </div>
-            <button @click="showGoogleAccountModal = false" class="text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer p-1">✕</button>
-          </div>
-
-          <!-- 帳戶清單 -->
-          <div class="mt-4 space-y-2.5">
-            <!-- 帳戶 1: xun0519@gmail.com (使用者帳戶，秒速登入) -->
-            <button 
-              type="button" 
-              @click="quickAuthorizeGoogle('xun0519@gmail.com')"
-              class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-emerald-50/70 border border-emerald-300 bg-emerald-50/30 transition-all text-left cursor-pointer group shadow-2xs"
-            >
-              <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-emerald-400 flex-shrink-0 bg-white shadow-xs">
-                <img src="user_avatar.png" alt="Xun" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=face'" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-black text-slate-900 group-hover:text-emerald-800">Xun (個案管理師)</span>
-                  <span class="px-1.5 py-0.2 rounded bg-emerald-600 text-white text-[9px] font-bold">推薦</span>
-                </div>
-                <div class="text-[11px] text-slate-500 font-mono truncate">xun0519@gmail.com</div>
-              </div>
-              <span class="text-xs text-emerald-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity">快速授權 →</span>
-            </button>
-
-            <!-- 帳戶 2: ecologydavid@gmail.com -->
-            <button 
-              type="button" 
-              @click="loginWithGoogleAccount({ name: 'David Chen', email: 'ecologydavid@gmail.com', role: '診所核心主管 / 醫師', picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face' })"
-              class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-blue-50/70 border border-slate-200 hover:border-blue-400 transition-all text-left cursor-pointer group shadow-2xs"
-            >
-              <div class="w-10 h-10 rounded-full overflow-hidden border border-blue-300 flex-shrink-0">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face" alt="David" class="w-full h-full object-cover" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-xs font-black text-slate-900 group-hover:text-blue-800">David Chen (陳醫師)</div>
-                <div class="text-[11px] text-slate-500 font-mono truncate">ecologydavid@gmail.com</div>
-              </div>
-              <span class="text-xs text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity">登入 →</span>
-            </button>
-
-            <!-- 帳戶 3: 自訂其他 Google 帳戶輸入 -->
-            <div class="pt-1">
-              <button 
-                type="button" 
-                @click="showCustomGoogleInput = !showCustomGoogleInput" 
-                class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 border border-dashed border-slate-300 hover:border-brand-400 transition-all text-left cursor-pointer"
-              >
-                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 flex-shrink-0">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                </div>
-                <div class="text-xs font-bold text-slate-700">使用其他 Google 帳號</div>
-              </button>
-
-              <!-- 展開自訂輸入區 -->
-              <div v-if="showCustomGoogleInput" class="mt-2.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Google 帳號 Email *</label>
-                  <input 
-                    type="email" 
-                    v-model="customGoogleEmail" 
-                    placeholder="例如：myclinic@gmail.com" 
-                    class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-brand-500 font-mono" 
-                  />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-700 mb-0.5">使用者姓名</label>
-                  <input 
-                    type="text" 
-                    v-model="customGoogleName" 
-                    placeholder="例如：林專員" 
-                    class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-brand-500 font-bold" 
-                  />
-                </div>
-                <button 
-                  type="button" 
-                  @click="loginWithCustomGoogleAccount" 
-                  class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
-                >
-                  確認並登入
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
-            <span>🔒 Google OAuth 安全機制</span>
-            <button @click="showGoogleAccountModal = false" class="hover:underline cursor-pointer">取消關閉</button>
-          </div>
-        </div>
-      </div>
+    <!-- Verified cloud login; local mode remains available for backup/migration. -->
+    <div v-if="!currentUser" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-5 overflow-y-auto">
+      <section class="w-full max-w-md bg-white rounded-3xl p-7 shadow-xl space-y-4 my-auto">
+        <h1 class="text-xl font-black">健和個案管理系統</h1>
+        <p class="text-sm text-slate-600">登入診所雲端帳號，在不同電腦使用同一份資料。</p>
+        <p role="status" class="text-xs p-3 rounded-xl bg-amber-50 text-amber-900">{{ supabaseSyncMsg }}</p>
+        <button @click="loginWithGoogle" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold">使用 Google 登入雲端</button>
+        <details class="text-sm">
+          <summary class="cursor-pointer py-2">使用診所 Email／密碼登入</summary>
+          <label class="block mt-2">Email<input type="email" v-model="cloudEmail" autocomplete="username" class="w-full border rounded-lg p-2 mt-1" /></label>
+          <label class="block mt-2">密碼<input type="password" v-model="cloudPassword" autocomplete="current-password" @keyup.enter="saveSupabaseCredentials" class="w-full border rounded-lg p-2 mt-1" /></label>
+          <button @click="saveSupabaseCredentials" class="w-full mt-3 p-2 bg-emerald-700 text-white rounded-lg">登入並同步</button>
+        </details>
+        <details class="text-sm">
+          <summary class="cursor-pointer py-2">首次設定雲端連線</summary>
+          <label class="block mt-2">Supabase 專案網址<input v-model="supabaseUrlInput" placeholder="https://專案代碼.supabase.co" class="w-full border rounded-lg p-2 mt-1" /></label>
+          <label class="block mt-2">公開金鑰<input v-model="supabaseKeyInput" placeholder="publishable 或 anon key" class="w-full border rounded-lg p-2 mt-1" /></label>
+          <p class="text-xs text-slate-500 mt-2">正式部署會共用同一組公開設定，換電腦不需重設。</p>
+        </details>
+        <button @click="enterLocalMode" class="text-sm underline text-slate-600">開啟此裝置的本機資料／匯出備份</button>
+        <p class="text-xs text-slate-500">本機模式不代表帳號登入成功，也不會自動同步到其他裝置。</p>
+      </section>
     </div>
 
-    <!-- ============================================== -->
     <!-- 左側邊欄導航 (Sidebar) -->
     <!-- ============================================== -->
     <aside 
@@ -1213,6 +1000,9 @@
       <header class="bg-white border-b border-slate-200/80 min-h-[4rem] px-4 sm:px-6 flex items-center justify-between flex-shrink-0 z-20 gap-2">
         <div class="flex items-center gap-2.5 min-w-0">
           <h2 class="text-base sm:text-lg font-black text-slate-900 truncate">{{ currentTabTitle }}</h2>
+          <button @click="openSupabaseSettings" class="text-[11px] font-bold rounded-lg px-2 py-1 border" :class="supabaseSyncStatus === 'connected' ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-amber-900 bg-amber-50 border-amber-300'" :title="supabaseSyncMsg">
+            {{ supabaseSyncStatus === 'connected' ? '☁ 已同步雲端' : supabaseSyncStatus === 'connecting' ? '↻ 待同步' : '⚠ 僅存本機／同步未完成' }}
+          </button>
           <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#ecfdf5] border border-emerald-200 text-emerald-900 text-xs rounded-full font-bold flex-shrink-0 shadow-2xs">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             或心設計有限公司 · 個案管理體系統
@@ -8228,196 +8018,27 @@
 
     createApp({
       setup() {
-        // 🔐 診所登入系統與 Google 第三方登入身分管理
-        let initialAuthUser = null;
-        try {
-          initialAuthUser = JSON.parse(localStorage.getItem('jianhe_auth_user') || 'null');
-        } catch (e) {
-          initialAuthUser = null;
-        }
-
-        // ⚡ 快速授權就緒：若尚未登入且未手動登出，預設自動授權 xun0519@gmail.com 快速登入
-        if (!initialAuthUser && localStorage.getItem('jianhe_has_logged_out') !== 'true') {
-          initialAuthUser = {
-            id: 'google_xun0519',
-            name: 'Xun (個案管理師)',
-            email: 'xun0519@gmail.com',
-            picture: 'user_avatar.png',
-            role: '個案管理師 · 臨床專員',
-            loginType: 'google',
-            loginAt: new Date().toISOString()
-          };
-          localStorage.setItem('jianhe_auth_user', JSON.stringify(initialAuthUser));
-        }
-
-        const currentUser = ref(initialAuthUser);
-        const googleClientId = ref(localStorage.getItem('jianhe_google_client_id') || '407408718192.apps.googleusercontent.com');
-        const showClientIdConfig = ref(false);
-
-        const parseJwt = (token) => {
+        // Identity is assigned only after Supabase verifies the user and membership.
+        const currentUser = ref(null);
+        const enterLocalMode = () => {
+          currentUser.value = { name: '本機模式', email: '僅此裝置，尚未登入雲端', picture: '', loginType: 'local' };
+        };
+        const loginWithGoogle = async () => {
+          if (!storeCloudSettings()) return;
           try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-          } catch (e) {
-            console.error('Failed to parse JWT token', e);
-            return null;
+            const client = ensureCloudClient();
+            const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: {
+              redirectTo: window.location.origin + window.location.pathname,
+              queryParams: { prompt: 'select_account' }
+            } });
+            if (error) throw error;
+          } catch (error) {
+            supabaseSyncStatus.value = 'error';
+            supabaseSyncMsg.value = 'Google 登入未完成：' + error.message;
           }
         };
-
-        const handleGoogleCredentialResponse = (response) => {
-          if (response && response.credential) {
-            const payload = parseJwt(response.credential);
-            if (payload) {
-              const userObj = {
-                id: payload.sub,
-                name: payload.name || payload.email || '診所管理員',
-                email: payload.email || '',
-                picture: payload.picture || '',
-                role: '個案管理師 / 臨床醫師',
-                loginType: 'google',
-                loginAt: new Date().toISOString()
-              };
-              currentUser.value = userObj;
-              localStorage.setItem('jianhe_auth_user', JSON.stringify(userObj));
-              localStorage.removeItem('jianhe_has_logged_out');
-              copyToastMessage.value = `🎉 歡迎回來，${userObj.name}！已成功透過 Google 帳號安全登入系統。`;
-              showToast.value = true;
-              setTimeout(() => { showToast.value = false; }, 3500);
-            }
-          }
-        };
-
-        // Google 帳戶選擇彈窗狀態
-        const showGoogleAccountModal = ref(false);
-        const customGoogleEmail = ref('');
-        const customGoogleName = ref('');
-        const showCustomGoogleInput = ref(false);
-
-        const openGoogleAccountModal = () => {
-          showGoogleAccountModal.value = true;
-        };
-
-        // ⚡ 1-Click 快速授權核心方法 (無痛跳過 Google 400 錯誤與 Cloud 複雜設定)
-        const quickAuthorizeGoogle = (email = 'xun0519@gmail.com') => {
-          let userObj = {};
-          if (email === 'ecologydavid@gmail.com') {
-            userObj = {
-              id: 'google_ecologydavid',
-              name: 'David Chen (陳醫師)',
-              email: 'ecologydavid@gmail.com',
-              picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
-              role: '主責醫師 / 系統管理者',
-              loginType: 'google',
-              loginAt: new Date().toISOString()
-            };
-          } else {
-            userObj = {
-              id: 'google_xun0519',
-              name: 'Xun (個案管理師)',
-              email: 'xun0519@gmail.com',
-              picture: 'user_avatar.png',
-              role: '個案管理師 · 臨床專員',
-              loginType: 'google',
-              loginAt: new Date().toISOString()
-            };
-          }
-          currentUser.value = userObj;
-          localStorage.setItem('jianhe_auth_user', JSON.stringify(userObj));
-          localStorage.removeItem('jianhe_has_logged_out');
-          showGoogleAccountModal.value = false;
-          copyToastMessage.value = `🎉 已快速完成 Google 帳號授權！歡迎回來，${userObj.name}`;
-          showToast.value = true;
-          setTimeout(() => { showToast.value = false; }, 3500);
-        };
-
-        const loginWithGoogleAccount = (acc) => {
-          const pic = acc.picture || (acc.email === 'xun0519@gmail.com' ? 'user_avatar.png' : '');
-          currentUser.value = {
-            id: 'google_' + (acc.email.split('@')[0]),
-            name: acc.name,
-            email: acc.email,
-            picture: pic,
-            role: acc.role || '個案管理師 / 臨床專員',
-            loginType: 'google',
-            loginAt: new Date().toISOString()
-          };
-          localStorage.setItem('jianhe_auth_user', JSON.stringify(currentUser.value));
-          localStorage.removeItem('jianhe_has_logged_out');
-          showGoogleAccountModal.value = false;
-          copyToastMessage.value = `🎉 已快速完成 Google 帳號授權！歡迎回來，${currentUser.value.name}`;
-          showToast.value = true;
-          setTimeout(() => { showToast.value = false; }, 3500);
-        };
-
-        const loginWithCustomGoogleAccount = () => {
-          const email = (customGoogleEmail.value || '').trim();
-          if (!email) {
-            alert('請輸入 Google 帳號 Email！');
-            return;
-          }
-          const name = (customGoogleName.value || '').trim() || email.split('@')[0];
-          loginWithGoogleAccount({
-            name: name,
-            email: email,
-            picture: '',
-            role: 'Google 認證使用者'
-          });
-        };
-
-        const initGoogleSignIn = () => {
-          // 保留 Google GIS 介面支援自訂 Client ID
-          if (typeof window === 'undefined') return;
-          if (window.google && window.google.accounts && window.google.accounts.id) {
-            const cid = (googleClientId.value || '').trim();
-            if (cid && cid !== '407408718192.apps.googleusercontent.com') {
-              try {
-                window.google.accounts.id.initialize({
-                  client_id: cid,
-                  callback: handleGoogleCredentialResponse,
-                  auto_select: false,
-                  cancel_on_tap_outside: true
-                });
-              } catch (err) {
-                console.warn('Google Sign-In init error:', err);
-              }
-            }
-          }
-        };
-
-        const triggerGoogleLogin = () => {
-          quickAuthorizeGoogle('xun0519@gmail.com');
-        };
-
-        const loginAsDemoUser = (roleType = 'rose') => {
-          if (roleType === 'david') {
-            quickAuthorizeGoogle('ecologydavid@gmail.com');
-          } else {
-            quickAuthorizeGoogle('xun0519@gmail.com');
-          }
-        };
-
-        const logout = () => {
-          if (confirm('確定要安全登出系統嗎？登出後將返回入口登入頁。')) {
-            currentUser.value = null;
-            localStorage.removeItem('jianhe_auth_user');
-            localStorage.setItem('jianhe_has_logged_out', 'true');
-            showGoogleAccountModal.value = false;
-            if (window.google && window.google.accounts && window.google.accounts.id) {
-              try {
-                window.google.accounts.id.disableAutoSelect();
-              } catch (e) {}
-            }
-          }
-        };
-
-        const saveGoogleClientId = () => {
-          localStorage.setItem('jianhe_google_client_id', (googleClientId.value || '').trim());
-          initGoogleSignIn();
-          alert('已儲存 Google Client ID！');
+        const logout = async () => {
+          if (confirm('登出雲端並返回登入頁？未上傳的資料會保留在此瀏覽器。')) await signOutCloud();
         };
 
         const currentTab = ref('dashboard');
@@ -9496,8 +9117,8 @@
         const followups = ref([]);
 
         // ☁️ Supabase 雲端即時資料庫設定與連線狀態
-        const supabaseUrl = ref(localStorage.getItem('jianhe_supabase_url') || '');
-        const supabaseKey = ref(localStorage.getItem('jianhe_supabase_key') || '');
+        const supabaseUrl = ref(window.CLINIC_CONFIG?.supabaseUrl || localStorage.getItem('jianhe_supabase_url') || '');
+        const supabaseKey = ref(window.CLINIC_CONFIG?.supabasePublishableKey || localStorage.getItem('jianhe_supabase_key') || '');
         const supabaseUrlInput = ref(supabaseUrl.value);
         const supabaseKeyInput = ref(supabaseKey.value);
         const supabaseClient = ref(null);
@@ -9532,7 +9153,7 @@
           showSettingsModal.value = true;
           settingsActiveTab.value = 'supabase';
         };
-        const saveSupabaseCredentials = async () => {
+        const storeCloudSettings = () => {
           const url = supabaseUrlInput.value.trim().replace(/\/$/, '');
           const key = supabaseKeyInput.value.trim();
           if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url) || !key) {
@@ -9552,9 +9173,32 @@
           localStorage.setItem('jianhe_supabase_url', url);
           localStorage.setItem('jianhe_supabase_key', key);
           if (unboundQueue) { pending = unboundQueue; persistQueue(); }
-          await initSupabase();
+          return true;
+        };
+        const saveSupabaseCredentials = async () => {
+          if (storeCloudSettings()) await initSupabase();
         };
         const testAndConnectSupabase = () => saveSupabaseCredentials();
+        const ensureCloudClient = () => {
+          if (!window.supabase) throw Error('無法載入 Supabase，請確認網路後重試。');
+          if (!supabaseClient.value) {
+            supabaseClient.value = window.supabase.createClient(supabaseUrl.value, supabaseKey.value);
+            supabaseClient.value.auth.onAuthStateChange((event) => {
+              if (event === 'SIGNED_OUT') {
+                ready = false;
+                clearTimeout(cloudSyncTimer);
+                currentUser.value = null;
+                cloudUser.value = '';
+                supabaseSyncStatus.value = 'offline';
+                supabaseSyncMsg.value = '雲端已登出，請重新登入。';
+              } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                // Avoid awaiting other Auth calls inside the Auth callback.
+                setTimeout(() => { if (!connecting && !busy) initSupabase(); }, 0);
+              }
+            });
+          }
+          return supabaseClient.value;
+        };
         const initSupabase = async () => {
           if (connecting || busy) return false;
           if (!supabaseUrl.value || !supabaseKey.value) return false;
@@ -9565,19 +9209,21 @@
             if (!window.supabase) throw Error('無法載入 Supabase，請確認網路後重試。');
             if (channel && supabaseClient.value) await supabaseClient.value.removeChannel(channel);
             channel = null;
-            if (!supabaseClient.value) supabaseClient.value = window.supabase.createClient(supabaseUrl.value, supabaseKey.value);
-            const client = supabaseClient.value;
+            const client = ensureCloudClient();
             if (cloudPassword.value) {
               const { error } = await client.auth.signInWithPassword({ email: cloudEmail.value.trim(), password: cloudPassword.value });
               cloudPassword.value = '';
               if (error) throw error;
             }
-            const { data, error } = await client.auth.getSession();
+            const { data, error } = await client.auth.getUser();
             if (error) throw error;
-            if (!data.session) throw Error('請輸入管理員建立的 Email 與密碼後登入。');
-            cloudUser.value = data.session.user.email;
-            const member = await client.from('clinic_members').select('user_id').eq('user_id', data.session.user.id).single();
+            if (!data.user) throw Error('請使用 Google 或診所 Email 與密碼登入雲端。');
+            const member = await client.from('clinic_members').select('user_id').eq('user_id', data.user.id).single();
             if (member.error || !member.data) throw Error('此帳號尚未取得診所存取權，請由管理員加入 clinic_members。');
+            cloudUser.value = data.user.email;
+            currentUser.value = { id: data.user.id, email: data.user.email,
+              name: data.user.user_metadata?.full_name || data.user.email,
+              picture: data.user.user_metadata?.avatar_url || '', loginType: 'supabase' };
             pending = JSON.parse(localStorage.getItem(queueKey()) || '{}');
             revisions = JSON.parse(localStorage.getItem(revisionKey()) || '{}');
             ready = true;
@@ -9707,7 +9353,12 @@
           clearTimeout(cloudSyncTimer);
           if (channel) await supabaseClient.value.removeChannel(channel);
           channel = null;
-          await supabaseClient.value.auth.signOut();
+          if (supabaseClient.value) {
+            const { error } = await supabaseClient.value.auth.signOut({ scope: 'local' });
+            if (error) { supabaseSyncMsg.value = '登出失敗，請重試：' + error.message; return; }
+          }
+          currentUser.value = null;
+          localStorage.removeItem('jianhe_auth_user');
           cloudUser.value = ''; cloudPassword.value = '';
           supabaseSyncStatus.value = 'offline';
           supabaseSyncMsg.value = '已登出雲端。本機離線資料仍保留在此裝置。';
@@ -12304,9 +11955,7 @@
           initSupabase();
           window.addEventListener('online', () => initSupabase());
 
-          if (!currentUser.value) {
-            setTimeout(initGoogleSignIn, 300);
-          }
+
 
           // 即時時鐘計時器 (每秒即時跳動與倒數刷新)
           updateClock();
@@ -12762,20 +12411,8 @@
           clearAllCaseData,
           // 🔐 診所登入系統與 Google 第三方登入
           currentUser,
-          googleClientId,
-          showClientIdConfig,
-          triggerGoogleLogin,
-          loginAsDemoUser,
-          logout,
-          saveGoogleClientId,
-          showGoogleAccountModal,
-          openGoogleAccountModal,
-          quickAuthorizeGoogle,
-          loginWithGoogleAccount,
-          loginWithCustomGoogleAccount,
-          customGoogleEmail,
-          customGoogleName,
-          showCustomGoogleInput,
+          loginWithGoogle, enterLocalMode, logout,
+
         };
       }
     }).mount('#app');
