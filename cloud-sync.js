@@ -2,6 +2,7 @@
 (function (root) {
   'use strict';
   const fields = {
+    clinic_settings: 'id',
     patients: 'id name chartNo gender age phone lineId leadStatus pipelineStage consultCategory doctor leadDoctors specialNotes chiefComplaint projectTotal paidAmount medicalAlerts drugAllergies systemicDiseases toothStatusMap treatments',
     appointments: 'id patientId patientName patientPhone category date time chair doctor duration status t3Date reminderDone treatmentCategories treatmentItems notes',
     lab_orders: 'id patientName chartNo labName itemType toothPositions shade sentDate expectedDate status isUrgent notes',

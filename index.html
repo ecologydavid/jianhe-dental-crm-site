@@ -7911,7 +7911,7 @@
           <div class="flex items-center gap-3">
             <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hidden sm:inline flex items-center gap-1">
               <span>✓</span>
-              <span>所有設定即時寫入本機</span>
+              <span>{{ supabaseSyncStatus === 'connected' ? '設定已同步雲端' : '設定已保留本機，等待雲端同步' }}</span>
             </span>
             <button 
               @click="closeSettingsModal" 
@@ -8450,14 +8450,14 @@
                 clinic: { ...DEFAULT_SYSTEM_SETTINGS.clinic, ...(parsed.clinic || {}) },
                 lineTemplates: { ...DEFAULT_LINE_TEMPLATES, ...(parsed.lineTemplates || {}) },
                 appointmentConfig: {
-                  doctors: (parsed.appointmentConfig && parsed.appointmentConfig.doctors && parsed.appointmentConfig.doctors.length > 0)
+                  doctors: Array.isArray(parsed.appointmentConfig?.doctors)
                     ? parsed.appointmentConfig.doctors
                     : JSON.parse(JSON.stringify(DEFAULT_APPOINTMENT_CONFIG.doctors)),
-                  treatmentCategories: (parsed.appointmentConfig && parsed.appointmentConfig.treatmentCategories && parsed.appointmentConfig.treatmentCategories.length > 0)
+                  treatmentCategories: Array.isArray(parsed.appointmentConfig?.treatmentCategories)
                     ? parsed.appointmentConfig.treatmentCategories
                     : [...DEFAULT_APPOINTMENT_CONFIG.treatmentCategories],
                   treatmentItemsMapping: (parsed.appointmentConfig && parsed.appointmentConfig.treatmentItemsMapping)
-                    ? { ...DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping, ...parsed.appointmentConfig.treatmentItemsMapping }
+                    ? parsed.appointmentConfig.treatmentItemsMapping
                     : JSON.parse(JSON.stringify(DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping))
                 }
               };
@@ -8473,6 +8473,7 @@
         const saveSystemSettings = () => {
           try {
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(systemSettings.value));
+            scheduleCloudSync();
           } catch (e) {
             console.warn('Failed to save system settings:', e);
           }
@@ -9131,7 +9132,15 @@
         const supabaseSyncStatus = ref('offline');
         const supabaseSyncMsg = ref('尚未連線。資料目前保存在此瀏覽器。');
         const cloudEmail = ref(''), cloudPassword = ref(''), cloudUser = ref('');
-        const collections = { patients, appointments, lab_orders: labOrders, followups };
+        // One row per settings group: edits to different groups do not conflict.
+        const settingsCollection = {
+          get value() { return Object.entries(systemSettings.value).map(([id, value]) => ({ id, value })); },
+          set value(rows) {
+            systemSettings.value = Object.fromEntries(rows.map(row => [row.id, row.value]));
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(systemSettings.value));
+          }
+        };
+        const collections = { patients, appointments, lab_orders: labOrders, followups, clinic_settings: settingsCollection };
         const S = window.ClinicSync;
         let observed = {}, revisions = JSON.parse(localStorage.getItem('jianhe_sync_revisions:' + supabaseUrl.value) || '{}'), pending = JSON.parse(localStorage.getItem('jianhe_sync_queue:' + supabaseUrl.value) || '{}'), channel = null;
         let cloudSyncTimer = null, busy = false, connecting = false, ready = false;
@@ -9211,7 +9220,7 @@
           connecting = true; ready = false;
           try {
             supabaseSyncStatus.value = 'connecting';
-            supabaseSyncMsg.value = '正在登入並檢查四個資料表…';
+            supabaseSyncMsg.value = '正在登入並讀取資料與設定…';
             if (!window.supabase) throw Error('無法載入 Supabase，請確認網路後重試。');
             if (channel && supabaseClient.value) await supabaseClient.value.removeChannel(channel);
             channel = null;
@@ -9232,6 +9241,7 @@
               picture: data.user.user_metadata?.avatar_url || '', loginType: 'supabase' };
             pending = JSON.parse(localStorage.getItem(queueKey()) || '{}');
             revisions = JSON.parse(localStorage.getItem(revisionKey()) || '{}');
+            await initializeCloudSettings();
             ready = true;
             await flushCloud();
             if (!await fetchFromSupabase()) return false;
@@ -9247,6 +9257,27 @@
             supabaseSyncMsg.value = '連線未完成：' + error.message;
             return false;
           } finally { connecting = false; }
+        };
+        const initializeCloudSettings = async () => {
+          const rows = await S.readAll(supabaseClient.value, 'clinic_settings');
+          const backupKey = 'jianhe_settings_before_cloud:' + supabaseUrl.value;
+          if (!localStorage.getItem(backupKey)) localStorage.setItem(backupKey, JSON.stringify(systemSettings.value));
+          const remote = new Map(rows.map(row => [row.id, row]));
+          const merged = new Map(rows.map(row => [row.id, S.decode('clinic_settings', row)]));
+          for (const item of settingsCollection.value) {
+            const key = 'clinic_settings:' + item.id;
+            if (!remote.has(item.id) && !pending[key]) {
+              pending[key] = { table: 'clinic_settings', id: item.id, row: S.encode('clinic_settings', item), base: null, token: crypto.randomUUID() };
+            }
+          }
+          for (const row of rows) revisions['clinic_settings:' + row.id] = row.updated_at;
+          for (const change of Object.values(pending).filter(c => c.table === 'clinic_settings')) {
+            if (change.row) merged.set(change.id, S.decode('clinic_settings', change.row));
+            else merged.delete(change.id);
+          }
+          settingsCollection.value = [...merged.values()];
+          observed.clinic_settings = S.clone(settingsCollection.value);
+          persistQueue();
         };
         const fetchFromSupabase = async () => {
           if (!ready || busy) return false;
@@ -9452,6 +9483,8 @@
             patients: patients.value,
             labOrders: labOrders.value,
             followups: followups.value,
+            systemSettings: systemSettings.value,
+            settingsBeforeCloud: JSON.parse(localStorage.getItem('jianhe_settings_before_cloud:' + supabaseUrl.value) || 'null'),
             exportedAt: new Date().toISOString()
           };
           const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
