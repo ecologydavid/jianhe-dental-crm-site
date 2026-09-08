@@ -9234,6 +9234,11 @@
             setupSupabaseRealtime();
             return true;
           } catch (error) {
+            if (error.name === 'AuthSessionMissingError' || error.message === 'Auth session missing!') {
+              supabaseSyncStatus.value = 'offline';
+              supabaseSyncMsg.value = '雲端資料庫已設定，請登入以讀取診所資料。';
+              return false;
+            }
             supabaseSyncStatus.value = 'error';
             supabaseSyncMsg.value = '連線未完成：' + error.message;
             return false;
