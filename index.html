@@ -2555,6 +2555,16 @@
                         >
                           📁 資料夾
                         </button>
+                        <button 
+                          @click.stop="deletePatient(p.id)" 
+                          class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                          title="刪除此病患個案與相關排程"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                          </svg>
+                          <span>刪除</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -3355,6 +3365,17 @@
               title="修改病患基本資料與治療內容"
             >
               <span>✏️</span> 編輯資料
+            </button>
+            <button 
+              v-if="!isEditingPatient" 
+              @click="deletePatient(selectedPatient.id)" 
+              class="px-2.5 sm:px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+              title="刪除此病患個案"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+              <span>刪除個案</span>
             </button>
             <div v-else class="flex items-center gap-1.5">
               <button 
@@ -11282,6 +11303,47 @@
           }
         };
 
+        const deletePatient = (patientId) => {
+          const target = patients.value.find(p => p.id === patientId);
+          if (!target) return;
+          const chartLabel = target.chartNo ? ` (病歷號: #${target.chartNo})` : '';
+          if (!confirm(`確定要刪除病患個案【${target.name}】${chartLabel} 嗎？\n\n⚠️ 注意：\n1. 此個案將從「病患資料庫」中永久移除\n2. 連動的約診排程與相關任務也將一併清理\n3. 此操作無法復原，請確認是否繼續？`)) return;
+
+          // 1. 從病患清單中移除
+          patients.value = patients.value.filter(p => p.id !== patientId);
+
+          // 2. 清理連動約診排程
+          const deletedAppsCount = appointments.value.filter(a => a.patientId === patientId || (target.name && a.patientName === target.name)).length;
+          appointments.value = appointments.value.filter(a => a.patientId !== patientId && (!target.name || a.patientName !== target.name));
+
+          // 3. 清理技工訂單與術後關懷任務
+          labOrders.value = labOrders.value.filter(o => o.patientId !== patientId && (!target.name || o.patientName !== target.name));
+          followups.value = followups.value.filter(f => f.patientId !== patientId && (!target.name || f.patientName !== target.name));
+
+          // 4. 若當前側邊抽屜開啟的是此病患，關閉抽屜
+          if (selectedPatient.value && selectedPatient.value.id === patientId) {
+            closePatientDrawer();
+          }
+
+          // 5. 若收款視窗開啟的是此病患，關閉視窗
+          if (paymentTargetPatient.value && paymentTargetPatient.value.id === patientId) {
+            paymentTargetPatient.value = null;
+          }
+
+          // 6. 若約診排程表單選取的是此病患，重設表單選取
+          if (newAppointmentForm.value && newAppointmentForm.value.patientId === patientId) {
+            newAppointmentForm.value.patientId = patients.value[0]?.id || '';
+          }
+
+          // 7. 儲存至本機並觸發雲端同步
+          saveToStorage();
+
+          // 8. 提示通知
+          copyToastMessage.value = `🗑️ 已成功刪除病患個案【${target.name}】${deletedAppsCount > 0 ? `與其 ${deletedAppsCount} 筆約診` : ''}！`;
+          showToast.value = true;
+          setTimeout(() => { showToast.value = false; }, 3500);
+        };
+
         const toggleAppointmentStatus = (app) => {
           app.status = app.status === '已報到' ? '已預約' : '已報到';
           saveToStorage();
@@ -12765,6 +12827,7 @@
           openAppointmentForPatient,
           createAppointment,
           deleteAppointment,
+          deletePatient,
           toggleAppointmentStatus,
           openAppointmentDetail,
           onAppointmentRowClick,
