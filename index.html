@@ -2403,6 +2403,7 @@
                   <option value="考慮中">3. 考慮中</option>
                   <option value="需回電">4. 需回電</option>
                   <option value="Failure">5. Failure</option>
+                  <option value="已完成">6. 已完成</option>
                 </select>
               </div>
 
@@ -2502,10 +2503,24 @@
                         </div>
                       </div>
                     </td>
-                    <td v-if="isSectionVisible('patientColLeadStatus')" class="py-3.5 px-4 whitespace-nowrap">
-                      <span class="px-2.5 py-1 rounded-full text-xs font-bold" :class="getLeadStatusBadgeClass(p.leadStatus)">
-                        {{ p.leadStatus }}
-                      </span>
+                    <td v-if="isSectionVisible('patientColLeadStatus')" class="py-3.5 px-4 whitespace-nowrap" @click.stop>
+                      <div class="relative inline-block">
+                        <select 
+                          v-model="p.leadStatus" 
+                          @change="onPatientLeadStatusChange(p)"
+                          class="appearance-none text-xs font-bold px-2.5 py-1 pr-6 rounded-full cursor-pointer transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-400"
+                          :class="getLeadStatusBadgeClass(p.leadStatus)"
+                          title="點擊可直接手動調整目前狀態"
+                        >
+                          <option value="治療中">1. 治療中</option>
+                          <option value="評估中">2. 評估中</option>
+                          <option value="考慮中">3. 考慮中</option>
+                          <option value="需回電">4. 需回電</option>
+                          <option value="Failure">5. Failure</option>
+                          <option value="已完成">6. 已完成</option>
+                        </select>
+                        <span class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[8px] opacity-70 font-mono">▼</span>
+                      </div>
                     </td>
                     <td v-if="isSectionVisible('patientColCategory')" class="py-3.5 px-4 font-medium text-slate-800">
                       <div class="font-bold">{{ p.consultCategory }}</div>
@@ -2883,6 +2898,16 @@
                   >
                     <span class="text-emerald-600 font-bold">✓ 已建檔</span>
                     <span class="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded font-semibold ml-0.5">↺ 撤銷為待處理</span>
+                  </button>
+                  <button 
+                    @click="deleteFollowup(f.id)" 
+                    class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                    title="刪除此項關懷任務"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    <span>刪除</span>
                   </button>
                 </div>
               </div>
@@ -3344,9 +3369,23 @@
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-xs px-2 py-0.5 bg-brand-100 text-brand-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-md font-extrabold">📁 個案資料管理</span>
                 <h3 class="font-bold text-slate-900 dark:text-white text-base sm:text-lg truncate">{{ selectedPatient.name }}</h3>
-                <span class="text-xs px-2 py-0.5 rounded-full font-bold" :class="getLeadStatusBadgeClass(selectedPatient.leadStatus)">
-                  {{ selectedPatient.leadStatus }}
-                </span>
+                <div class="relative inline-block">
+                  <select 
+                    v-model="selectedPatient.leadStatus" 
+                    @change="onPatientLeadStatusChange(selectedPatient)"
+                    class="appearance-none text-xs font-bold px-2 py-0.5 pr-5 rounded-full cursor-pointer transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-400"
+                    :class="getLeadStatusBadgeClass(selectedPatient.leadStatus)"
+                    title="點擊可直接手動調整目前狀態"
+                  >
+                    <option value="治療中">1. 治療中</option>
+                    <option value="評估中">2. 評估中</option>
+                    <option value="考慮中">3. 考慮中</option>
+                    <option value="需回電">4. 需回電</option>
+                    <option value="Failure">5. Failure</option>
+                    <option value="已完成">6. 已完成</option>
+                  </select>
+                  <span class="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] opacity-70 font-mono">▼</span>
+                </div>
                 <span class="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded font-medium">
                   {{ selectedPatient.pipelineStage }}
                 </span>
@@ -3475,12 +3514,12 @@
                 />
               </div>
               <div>
-                <label class="block text-slate-700 font-bold mb-1">聯絡電話 *</label>
+                <label class="block text-slate-700 font-bold mb-1">聯絡電話</label>
                 <input 
                   type="text" 
                   v-model="editPatientForm.phone" 
-                  required 
                   class="w-full p-2 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-bold" 
+                  placeholder="選填"
                 />
               </div>
               <div>
@@ -3500,6 +3539,7 @@
                   <option value="考慮中">3. 考慮中</option>
                   <option value="需回電">4. 需回電</option>
                   <option value="Failure">5. Failure</option>
+                  <option value="已完成">6. 已完成</option>
                 </select>
               </div>
               <div>
@@ -3716,8 +3756,20 @@
                     <span class="text-slate-400 font-normal">({{ app.duration || 60 }}分鐘)</span>
                     <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold">{{ app.chair }} · {{ app.doctor }}</span>
                   </div>
-                  <div class="text-[11px] text-slate-600 mt-1">
-                    療程：{{ app.category }} ｜ {{ app.notes || '常規排程' }}
+                  <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                    療程：{{ app.category }} ｜ 當日看診項目：{{ getAppTreatmentItemsText(app) }}
+                  </div>
+                  <!-- ⚡ 連動 特殊叮嚀 / 目前進度備忘 -->
+                  <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1 flex items-start gap-1">
+                    <span class="text-teal-800 dark:text-teal-300 font-bold flex-shrink-0">⚡ 特殊叮嚀 / 目前進度備忘：</span>
+                    <span class="font-medium text-slate-700 dark:text-slate-200 break-words">
+                      <template v-if="app.notes && selectedPatient?.specialNotes && app.notes !== selectedPatient.specialNotes">
+                        {{ app.notes }} <span class="text-slate-400 dark:text-slate-500">（個案進度：{{ selectedPatient.specialNotes }}）</span>
+                      </template>
+                      <template v-else>
+                        {{ app.notes || selectedPatient?.specialNotes || '無' }}
+                      </template>
+                    </span>
                   </div>
                   <div class="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
                     <div class="flex items-center gap-1.5">
@@ -5404,8 +5456,8 @@
                 <input 
                   type="text" 
                   v-model="newAppointmentForm.newPatientPhone" 
-                  required 
                   class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-bold text-xs" 
+                  placeholder="選填"
                 />
               </div>
               <div>
@@ -5435,6 +5487,7 @@
                   <option value="考慮中">3. 考慮中</option>
                   <option value="需回電">4. 需回電</option>
                   <option value="Failure">5. Failure</option>
+                  <option value="已完成">6. 已完成</option>
                 </select>
               </div>
               <div>
@@ -5904,8 +5957,8 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-slate-700 font-bold mb-1">聯絡電話 *</label>
-              <input type="text" v-model="newPatientForm.phone" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="09xx-xxx-xxx" />
+              <label class="block text-slate-700 font-bold mb-1">聯絡電話</label>
+              <input type="text" v-model="newPatientForm.phone" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="09xx-xxx-xxx (選填)" />
             </div>
             <div>
               <label class="block text-slate-700 font-bold mb-1">LINE ID</label>
@@ -5937,6 +5990,7 @@
                 <option value="考慮中">3. 考慮中</option>
                 <option value="需回電">4. 需回電</option>
                 <option value="Failure">5. Failure</option>
+                <option value="已完成">6. 已完成</option>
               </select>
             </div>
           </div>
@@ -10555,11 +10609,11 @@
             .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
         };
 
-        // 取得特定病患的所有約診排程 (雙向連動)
+        // 取得特定病患的所有約診排程 (雙向連動，依看診時間近到遠遞增排序)
         const getPatientAppointments = (patientId) => {
           return appointments.value
             .filter(a => a.patientId === patientId)
-            .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+            .sort((a, b) => (a.date + ' ' + (a.time || '')).localeCompare(b.date + ' ' + (b.time || '')));
         };
 
         // 病患名單依病歷號嚴格自然排序與唯一去重 (供約診選單等臨床場景使用)
@@ -10597,6 +10651,7 @@
               if (fls === '考慮中' && (p.leadStatus === '觀望中' || p.leadStatus === '3. 考慮中')) return true;
               if (fls === '需回電' && (p.leadStatus === '需再跟進' || p.leadStatus === '4. 需回電')) return true;
               if (fls === 'Failure' && (p.leadStatus === '未成交' || p.leadStatus === '流失' || p.leadStatus === '5. Failure')) return true;
+              if (fls === '已完成' && (p.leadStatus === '已結案' || p.leadStatus === '6. 已完成')) return true;
               return false;
             });
           }
@@ -11106,8 +11161,8 @@
 
           if (appointmentPatientMode.value === 'new') {
             // 自動為新病患建立完整個案資料管理與病歷號，直接加入病患資料庫！
-            const rawName = newAppointmentForm.value.newPatientName.trim();
-            const rawPhone = newAppointmentForm.value.newPatientPhone.trim();
+            const rawName = (newAppointmentForm.value.newPatientName || '').trim();
+            const rawPhone = (newAppointmentForm.value.newPatientPhone || '').trim();
             if (!rawName) {
               alert('請輸入新病患姓名！');
               return;
@@ -11138,7 +11193,7 @@
             // 檢查是否已有相同病歷號或姓名+電話的病患，避免重複新增相同的病人
             const existingMatch = patients.value.find(p => 
               (p.chartNo && String(p.chartNo).trim() === targetChartNo) || 
-              (p.name === rawName && p.phone === rawPhone)
+              (rawPhone && p.name === rawName && p.phone === rawPhone)
             );
 
             if (existingMatch) {
@@ -12258,6 +12313,17 @@
           toggleFollowupStatus(followupId);
         };
 
+        const deleteFollowup = (followupId) => {
+          const target = followups.value.find(f => f.id === followupId);
+          if (!target) return;
+          if (!confirm(`確定要刪除病患【${target.patientName}】的此項術後關懷任務（${target.type}）嗎？`)) return;
+          followups.value = followups.value.filter(f => f.id !== followupId);
+          saveToStorage();
+          copyToastMessage.value = `🗑️ 已刪除【${target.patientName}】的術後關懷任務！`;
+          showToast.value = true;
+          setTimeout(() => { showToast.value = false; }, 3000);
+        };
+
         // 樣式輔助方法
         const formatMoney = (val) => {
           if (!val && val !== 0) return '0';
@@ -12290,12 +12356,24 @@
             case '未成交':
             case '流失':
               return 'bg-slate-100 text-slate-600 border border-slate-300';
+            case '6. 已完成':
+            case '已完成':
+            case '已結案':
+              return 'bg-teal-50 text-teal-700 border border-teal-200';
             case '🔥 高意向':
             case '高意向':
               return 'bg-rose-50 text-rose-700 border border-rose-200';
             default:
               return 'bg-slate-100 text-slate-700 border border-slate-200';
           }
+        };
+
+        const onPatientLeadStatusChange = (patient) => {
+          if (!patient) return;
+          saveToStorage();
+          copyToastMessage.value = `✅ 已將【${patient.name}】的目前狀態更新為「${patient.leadStatus}」！`;
+          showToast.value = true;
+          setTimeout(() => { showToast.value = false; }, 2500);
         };
 
         const getCategoryBadgeClass = (cat) => {
@@ -12844,8 +12922,10 @@
           openNewFollowupModal,
           createFollowup,
           markFollowupDone,
+          deleteFollowup,
           toggleFollowupStatus,
           formatMoney,
+          onPatientLeadStatusChange,
           getLeadStatusBadgeClass,
           getCategoryBadgeClass,
           getCalendarChipClass,
