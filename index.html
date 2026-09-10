@@ -1320,7 +1320,7 @@
                   @click="createAppointmentFromSearch(globalSearch)"
                   class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-all cursor-pointer"
                 >
-                  <span>📅</span> 安排門診約診
+                  <span>📅</span> 安排約診
                 </button>
               </div>
             </div>
@@ -1329,13 +1329,25 @@
           <!-- 快速安排約診按鈕 -->
           <button 
             @click="openNewAppointmentModal" 
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap flex-shrink-0"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
             title="安排病患約診 (支援登記新病患自動入庫)"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
-            <span>安排門診約診</span>
+            <span>安排約診</span>
+          </button>
+
+          <!-- 新增個案資料按鈕 (單獨新增個案資料，無需強制綁定門診約診與看診醫師) -->
+          <button 
+            @click="openNewPatientModal" 
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
+            title="單獨新增個案資料"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>+ 新增個案資料</span>
           </button>
         </div>
       </header>
@@ -1363,6 +1375,66 @@
           <button 
             @click="showT3TopBanner = false" 
             class="p-1 text-amber-700 hover:text-amber-950 rounded hover:bg-amber-200/40 transition-colors"
+            title="關閉橫幅"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 🩺 今日到診病患後續預約提醒橫幅 (提示功能 I) -->
+      <div 
+        v-if="todayFollowupReminders.length > 0 && showTodayFollowupBanner && isSectionVisible('dashboardTopBanner')" 
+        class="bg-gradient-to-r from-teal-50/95 via-cyan-50/80 to-emerald-50/60 text-slate-900 px-4 sm:px-6 py-2 flex items-center justify-between shadow-2xs flex-shrink-0 text-xs border-b border-teal-200/90"
+      >
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-2xs"><span class="animate-bell-ring">🩺</span></span>
+          <div class="truncate text-slate-900">
+            <strong class="font-black text-teal-800">【後續預約提醒】</strong>
+            <span>今日到診病人看完診後須提醒當日預約下次到診時間：共 <strong class="text-teal-900 font-black px-1.5 py-0.2 bg-teal-200/70 rounded">{{ todayFollowupReminders.length }}</strong> 位病患</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0 ml-3">
+          <button 
+            @click="showTodayFollowupModal = true" 
+            class="px-3 py-1 bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-black shadow-xs transition-colors flex items-center gap-1 text-xs cursor-pointer"
+          >
+            <span>立即開啟連結</span>
+            <span>→</span>
+          </button>
+          <button 
+            @click="showTodayFollowupBanner = false" 
+            class="p-1 text-slate-500 hover:text-slate-800 rounded hover:bg-teal-100/50 transition-colors cursor-pointer"
+            title="關閉橫幅"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 🚨 今日無法前來 / 未報到改約提醒橫幅 (提示功能 II) -->
+      <div 
+        v-if="todayRescheduleReminders.length > 0 && showTodayRescheduleBanner && isSectionVisible('dashboardTopBanner')" 
+        class="bg-gradient-to-r from-rose-50/95 via-red-50/70 to-orange-50/50 text-rose-950 px-4 sm:px-6 py-2 flex items-center justify-between shadow-2xs flex-shrink-0 text-xs border-b border-rose-200/90"
+      >
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-6 h-6 rounded-full bg-rose-200/70 text-rose-900 flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-2xs"><span>⚠️</span></span>
+          <div class="truncate text-rose-950">
+            <strong class="font-black text-rose-900">【須改約提醒】</strong>
+            <span>當日無法前來需要改約的提醒：共 <strong class="text-rose-900 font-black px-1.5 py-0.2 bg-rose-200/70 rounded">{{ todayRescheduleReminders.length }}</strong> 位未報到病患</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0 ml-3">
+          <button 
+            @click="showTodayRescheduleModal = true" 
+            class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-black shadow-xs transition-colors flex items-center gap-1 text-xs cursor-pointer"
+          >
+            <span>立即開啟連結</span>
+            <span>→</span>
+          </button>
+          <button 
+            @click="showTodayRescheduleBanner = false" 
+            class="p-1 text-rose-700 hover:text-rose-950 rounded hover:bg-rose-200/40 transition-colors cursor-pointer"
             title="關閉橫幅"
           >
             ✕
@@ -2315,10 +2387,12 @@
                       @click.stop="openAppointmentDetail(app)"
                       :class="[
                         'px-2 py-1.5 rounded-lg border cursor-grab active:cursor-grabbing transition-all hover:shadow-md hover:scale-[1.01] select-none block leading-tight',
-                        getCalendarChipClass(app.category),
+                        (app.status === '未報到' || app.status === '未到') 
+                          ? 'border-2 border-dashed border-rose-500 bg-rose-50/70 dark:bg-rose-950/40 shadow-xs' 
+                          : getCalendarChipClass(app.category),
                         draggedCalendarApp && draggedCalendarApp.id === app.id ? 'opacity-40 scale-95 ring-2 ring-brand-400' : 'shadow-2xs'
                       ]"
-                      :title="`${getAppointmentTimeRange(app)} ${app.patientName} | 醫師: ${formatDoctorDisplay(app.doctor)} | 項目: ${getAppTreatmentItemsText(app)} - 點擊查看`"
+                      :title="`${getAppointmentTimeRange(app)} ${app.patientName} | 醫師: ${formatDoctorDisplay(app.doctor)} | 項目: ${getAppTreatmentItemsText(app)} | 狀態: ${app.status || '已預約'} - 點擊查看`"
                     >
                       <!-- 第一列：[約診時間] [病患名稱] [醫師名稱] -->
                       <div class="flex items-center justify-between gap-1">
@@ -2330,10 +2404,20 @@
                           {{ app.doctor.replace(' 醫師', '').replace('醫師', '') }}
                         </span>
                       </div>
-                      <!-- 第二列：[當日看診項目] -->
-                      <div class="text-[11px] font-semibold text-slate-600 truncate mt-1 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span>
-                        <span class="truncate" :title="getAppTreatmentItemsText(app)">{{ getAppTreatmentItemsText(app) }}</span>
+                      <!-- 第二列：[當日看診項目] 與 [狀態標籤 (可點擊切換)] -->
+                      <div class="text-[11px] font-semibold text-slate-600 truncate mt-1 flex items-center justify-between gap-1">
+                        <div class="flex items-center gap-1 min-w-0 truncate">
+                          <span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span>
+                          <span class="truncate" :title="getAppTreatmentItemsText(app)">{{ getAppTreatmentItemsText(app) }}</span>
+                        </div>
+                        <span 
+                          @click.stop="toggleAppointmentStatus(app)"
+                          class="px-1.5 py-0.2 rounded text-[10px] font-extrabold shrink-0 cursor-pointer shadow-2xs border transition-all"
+                          :class="getAppointmentStatusBadgeClass(app.status)"
+                          :title="`點擊切換狀態（目前：${app.status || '已預約'}，點擊依序切換：已預約 ➔ 已報到 ➔ 未報到）`"
+                        >
+                          {{ app.status || '已預約' }}
+                        </span>
                       </div>
                       <!-- 在一週長條模式下，額外顯示時長與醫師，更具臨床專業度 -->
                       <div v-if="calendarViewSpan === 'week'" class="text-[10px] text-slate-500 font-semibold flex items-center justify-between mt-1 pt-1 border-t border-slate-200/60">
@@ -3640,16 +3724,7 @@
             />
           </div>
 
-          <!-- 個案主訴與期望 -->
-          <div class="p-3.5 bg-slate-100 rounded-xl space-y-2 text-xs">
-            <label class="block text-slate-700 font-bold mb-1">個案主訴與期望</label>
-            <textarea 
-              v-model="editPatientForm.chiefComplaint" 
-              rows="3" 
-              class="w-full p-2.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none text-xs text-slate-800" 
-              placeholder="記錄患者的主訴與治療期望..."
-            ></textarea>
-          </div>
+
         </div>
 
         <!-- 👁️ 模式 B：病患資料夾【常規瀏覽檢視模式】 -->
@@ -3719,13 +3794,6 @@
             <div v-if="selectedPatient.specialNotes" class="mt-2 pt-2 border-t border-teal-200/60 text-slate-800">
               <span class="text-teal-900 font-bold">⚡ 特殊叮嚀 / 目前進度：</span>
               <span class="font-medium text-slate-700">{{ selectedPatient.specialNotes }}</span>
-            </div>
-          </div>
-
-          <div>
-            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">個案主訴與期望</h4>
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm text-slate-800 leading-relaxed">
-              {{ selectedPatient.chiefComplaint }}
             </div>
           </div>
 
@@ -5349,6 +5417,374 @@
     </div>
 
     <!-- ============================================== -->
+    <!-- MODAL: 今日到診病患後續預約追蹤中心 (Followup Modal) -->
+    <!-- ============================================== -->
+    <div v-if="showTodayFollowupModal" v-cloak class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl">
+        <!-- 彈窗頂部 Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-teal-400 text-white flex items-center justify-center text-lg shadow-md shadow-teal-500/20 flex-shrink-0">
+              <span>🩺</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-900 text-base sm:text-lg">今日看診後續預約提醒中心</h3>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 font-extrabold border border-teal-300">
+                  當日看診後續約診
+                </span>
+              </div>
+              <p class="text-xs text-slate-500">
+                掌握今日已到診病患，提醒看完診後當日預約下次到診時間，落實連續性治療排程
+              </p>
+            </div>
+          </div>
+          <button @click="showTodayFollowupModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0 cursor-pointer">✕</button>
+        </div>
+
+        <!-- 彈窗統計指標列與分頁標籤 -->
+        <div class="pt-3 pb-2 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+          <div class="flex p-1 bg-slate-100 rounded-xl text-xs font-bold">
+            <button 
+              type="button" 
+              @click="todayFollowupModalFilter = 'pending'"
+              :class="todayFollowupModalFilter === 'pending' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>🚨 待約下次</span>
+              <span v-if="todayFollowupPendingCount > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black">
+                {{ todayFollowupPendingCount }}
+              </span>
+            </button>
+            <button 
+              type="button" 
+              @click="todayFollowupModalFilter = 'done'"
+              :class="todayFollowupModalFilter === 'done' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>✅ 已排下次 ({{ todayFollowupDoneCount }})</span>
+            </button>
+            <button 
+              type="button" 
+              @click="todayFollowupModalFilter = 'all'"
+              :class="todayFollowupModalFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>全部到診 ({{ todayFollowupReminders.length }})</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 列表主體滾動區域 -->
+        <div class="flex-1 overflow-y-auto py-2 pr-1 space-y-3">
+          <div 
+            v-for="rem in displayedTodayFollowupList" 
+            :key="rem.id"
+            class="p-4 rounded-xl border transition-all hover:shadow-md bg-white border-slate-200/90"
+          >
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div class="space-y-1.5 flex-1 min-w-[240px]">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-black text-slate-900 text-base">{{ rem.patientName }}</span>
+                  <span v-if="rem.patientChartNo" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo }}</span>
+                  <span class="px-2 py-0.5 rounded text-xs font-black border inline-flex items-center gap-1 bg-teal-50 text-teal-800 border-teal-200">
+                    {{ rem.status || '已報到' }}
+                  </span>
+                  <span v-if="rem.hasNextApp || rem.followupDone" class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    ✅ 已安排下次約診
+                  </span>
+                  <span v-else class="px-2 py-0.5 rounded text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                    ⏳ 待約下次看診時間
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                  <span v-if="rem.phone" class="flex items-center gap-1">
+                    <span class="text-slate-400">📞</span>
+                    <a :href="'tel:' + rem.phone" class="font-mono font-bold text-slate-800 hover:text-brand-600">{{ rem.phone }}</a>
+                  </span>
+                  <span v-if="rem.patientLineId" class="flex items-center gap-1">
+                    <span class="text-emerald-600 font-bold">LINE:</span>
+                    <span class="font-mono font-bold text-slate-700">{{ rem.patientLineId }}</span>
+                  </span>
+                </div>
+
+                <!-- 今日約診資訊 -->
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-1 mt-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <div>
+                      <span class="text-slate-400 font-medium">今日看診時段：</span>
+                      <strong class="text-slate-900">{{ rem.date }} {{ getAppointmentTimeRange(rem) }}</strong>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 font-medium">看診醫師：</span>
+                      <strong class="text-teal-800">{{ formatDoctorDisplay(rem.doctor) }}</strong>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 font-medium">今日看診項目：</span>
+                    <span class="font-bold text-slate-800">{{ rem.treatmentItemsText }}</span>
+                    <span v-if="rem.notes" class="text-slate-500 ml-1">（{{ rem.notes }}）</span>
+                  </div>
+                  <div v-if="rem.nextAppInfo" class="pt-1 border-t border-slate-200/60 text-emerald-800 font-bold flex items-center gap-1">
+                    <span>📅 下次約診：</span>
+                    <span class="font-mono">{{ rem.nextAppInfo }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 右側操作按鈕區 -->
+              <div class="flex sm:flex-col items-stretch sm:justify-center gap-2 flex-shrink-0 w-full sm:w-44 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:border-slate-100 sm:pl-3">
+                <button 
+                  type="button"
+                  @click="copyTodayFollowupLineTemplate(rem)"
+                  class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="複製此病患回診預約關懷 LINE 訊息"
+                >
+                  <span>📋</span>
+                  <span class="whitespace-nowrap">複製回診 LINE 提醒</span>
+                </button>
+
+                <button 
+                  type="button"
+                  @click="scheduleNextAppointmentFor(rem)"
+                  class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="為此病患安排下次約診時段"
+                >
+                  <span>📅</span>
+                  <span class="whitespace-nowrap">安排下次約診</span>
+                </button>
+
+                <button 
+                  type="button"
+                  @click="toggleTodayFollowupDone(rem)"
+                  :class="rem.followupDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300' : 'bg-teal-700 hover:bg-teal-800 text-white shadow-xs'"
+                  class="w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <span>{{ rem.followupDone ? '↩️' : '✅' }}</span>
+                  <span class="whitespace-nowrap">{{ rem.followupDone ? '設為待處理' : '標記已完成' }}</span>
+                </button>
+
+                <button 
+                  v-if="rem.patientId"
+                  type="button"
+                  @click="showTodayFollowupModal = false; viewPatientDetail(rem.patientId)"
+                  class="w-full py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-teal-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+                  title="開啟病患個案完整資料夾"
+                >
+                  <span>📁</span>
+                  <span class="whitespace-nowrap">開啟個案資料夾</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="displayedTodayFollowupList.length === 0" class="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+            <div class="text-3xl">🎉</div>
+            <div class="text-sm font-bold text-slate-700">目前無需要提醒的後續約診病患</div>
+            <div class="text-xs text-slate-400">今日到診之病患皆已排定下次預約，或今日尚無病患報到看診。</div>
+          </div>
+        </div>
+
+        <!-- 彈窗底部 Footer -->
+        <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+          <div class="text-xs text-slate-500">
+            💡 個管師備忘：看診結束後立即協助患者確認下次預約時間，可大幅提升治療成效與患者滿意度。
+          </div>
+          <button 
+            type="button" 
+            @click="showTodayFollowupModal = false" 
+            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+          >
+            關閉視窗
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL: 今日未報到病患改約關懷中心 (Reschedule Modal) -->
+    <!-- ============================================== -->
+    <div v-if="showTodayRescheduleModal" v-cloak class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl">
+        <!-- 彈窗頂部 Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-rose-400 text-white flex items-center justify-center text-lg shadow-md shadow-rose-500/20 flex-shrink-0">
+              <span>⚠️</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-900 text-base sm:text-lg">今日無法前來 / 未報到改約關懷中心</h3>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-900 font-extrabold border border-rose-300">
+                  當日未到診改約
+                </span>
+              </div>
+              <p class="text-xs text-slate-500">
+                掌握今日因故無法到診或未報到之病患名單，主動聯絡關心並協助重新預約合適看診時段
+              </p>
+            </div>
+          </div>
+          <button @click="showTodayRescheduleModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0 cursor-pointer">✕</button>
+        </div>
+
+        <!-- 彈窗統計指標列與分頁標籤 -->
+        <div class="pt-3 pb-2 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+          <div class="flex p-1 bg-slate-100 rounded-xl text-xs font-bold">
+            <button 
+              type="button" 
+              @click="todayRescheduleModalFilter = 'pending'"
+              :class="todayRescheduleModalFilter === 'pending' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>🚨 待改約關懷</span>
+              <span v-if="todayReschedulePendingCount > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black">
+                {{ todayReschedulePendingCount }}
+              </span>
+            </button>
+            <button 
+              type="button" 
+              @click="todayRescheduleModalFilter = 'done'"
+              :class="todayRescheduleModalFilter === 'done' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>✅ 已改約/已關懷 ({{ todayRescheduleDoneCount }})</span>
+            </button>
+            <button 
+              type="button" 
+              @click="todayRescheduleModalFilter = 'all'"
+              :class="todayRescheduleModalFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>全部未到 ({{ todayRescheduleReminders.length }})</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 列表主體滾動區域 -->
+        <div class="flex-1 overflow-y-auto py-2 pr-1 space-y-3">
+          <div 
+            v-for="rem in displayedTodayRescheduleList" 
+            :key="rem.id"
+            class="p-4 rounded-xl border-2 border-dashed transition-all hover:shadow-md bg-rose-50/40 border-rose-300"
+          >
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div class="space-y-1.5 flex-1 min-w-[240px]">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-black text-slate-900 text-base">{{ rem.patientName }}</span>
+                  <span v-if="rem.patientChartNo" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo }}</span>
+                  <span class="px-2 py-0.5 rounded text-xs font-black border inline-flex items-center gap-1 bg-rose-100 text-rose-800 border-rose-300">
+                    未報到
+                  </span>
+                  <span v-if="rem.rescheduledDone" class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    ✅ 已完成改期追蹤
+                  </span>
+                  <span v-else class="px-2 py-0.5 rounded text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                    ⚠️ 今日無法前來，待聯繫改約
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                  <span v-if="rem.phone" class="flex items-center gap-1">
+                    <span class="text-slate-400">📞</span>
+                    <a :href="'tel:' + rem.phone" class="font-mono font-bold text-slate-800 hover:text-brand-600">{{ rem.phone }}</a>
+                  </span>
+                  <span v-if="rem.patientLineId" class="flex items-center gap-1">
+                    <span class="text-emerald-600 font-bold">LINE:</span>
+                    <span class="font-mono font-bold text-slate-700">{{ rem.patientLineId }}</span>
+                  </span>
+                </div>
+
+                <!-- 未到診之原約診資訊 -->
+                <div class="bg-white/90 p-2.5 rounded-lg border border-rose-200/80 text-xs space-y-1 mt-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <div>
+                      <span class="text-slate-400 font-medium">原排看診時段：</span>
+                      <strong class="text-slate-900">{{ rem.date }} {{ getAppointmentTimeRange(rem) }}</strong>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 font-medium">原預約醫師：</span>
+                      <strong class="text-teal-800">{{ formatDoctorDisplay(rem.doctor) }}</strong>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 font-medium">原預定診療項目：</span>
+                    <span class="font-bold text-slate-800">{{ rem.treatmentItemsText }}</span>
+                    <span v-if="rem.notes" class="text-slate-500 ml-1">（{{ rem.notes }}）</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 右側操作按鈕區 -->
+              <div class="flex sm:flex-col items-stretch sm:justify-center gap-2 flex-shrink-0 w-full sm:w-44 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:border-slate-100 sm:pl-3">
+                <button 
+                  type="button"
+                  @click="copyTodayRescheduleLineTemplate(rem)"
+                  class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="複製此病患改約關懷 LINE 訊息"
+                >
+                  <span>📋</span>
+                  <span class="whitespace-nowrap">複製改約 LINE 關懷</span>
+                </button>
+
+                <button 
+                  type="button"
+                  @click="scheduleRescheduleAppointmentFor(rem)"
+                  class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  title="重新為病患安排約診時段"
+                >
+                  <span>📅</span>
+                  <span class="whitespace-nowrap">重新安排約診</span>
+                </button>
+
+                <button 
+                  type="button"
+                  @click="toggleTodayRescheduled(rem)"
+                  :class="rem.rescheduledDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300' : 'bg-rose-700 hover:bg-rose-800 text-white shadow-xs'"
+                  class="w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <span>{{ rem.rescheduledDone ? '↩️' : '🔄' }}</span>
+                  <span class="whitespace-nowrap">{{ rem.rescheduledDone ? '設為待改約' : '標記已改期' }}</span>
+                </button>
+
+                <button 
+                  v-if="rem.patientId"
+                  type="button"
+                  @click="showTodayRescheduleModal = false; viewPatientDetail(rem.patientId)"
+                  class="w-full py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-teal-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+                  title="開啟病患個案完整資料夾"
+                >
+                  <span>📁</span>
+                  <span class="whitespace-nowrap">開啟個案資料夾</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="displayedTodayRescheduleList.length === 0" class="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+            <div class="text-3xl">🎉</div>
+            <div class="text-sm font-bold text-slate-700">太棒了！今日無未報到病患</div>
+            <div class="text-xs text-slate-400">所有今日約診病患皆正常到診或完成排程，無缺席須改約項目。</div>
+          </div>
+        </div>
+
+        <!-- 彈窗底部 Footer -->
+        <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+          <div class="text-xs text-slate-500">
+            💡 個管師備忘：點擊「重新安排約診」將自動帶入病患資料與未到備忘，方便迅速協調新時段。
+          </div>
+          <button 
+            type="button" 
+            @click="showTodayRescheduleModal = false" 
+            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+          >
+            關閉視窗
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
     <!-- MODAL 2: 安排病患約診排程 (手動輸入與病患庫【完美連動整合】) -->
     <!-- ============================================== -->
     <!-- 全域個案進度階段智能建議清單 (支援自填與快速點選) -->
@@ -5594,17 +6030,6 @@
                   placeholder="例如：骨質疏鬆用藥 (BMA), 高血壓..." 
                 />
               </div>
-            </div>
-
-            <!-- 第四列：個案主訴與期望 (文字框) -->
-            <div>
-              <label class="block text-slate-700 font-bold mb-0.5">個案主訴與期望</label>
-              <textarea 
-                v-model="newAppointmentForm.newPatientChiefComplaint" 
-                rows="2" 
-                class="w-full p-1.5 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none text-xs" 
-                placeholder="說明缺牙位置、期待美觀度或生活困擾..."
-              ></textarea>
             </div>
           </div>
 
@@ -5966,35 +6391,73 @@
     <!-- MODAL 3: 新增自費諮詢個案 (New Patient) -->
     <!-- ============================================== -->
     <div v-if="showNewPatientModal" v-cloak class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
-      <div class="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl">
+      <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
-          <h3 class="font-black text-slate-900 text-base">新增自費諮詢個案</h3>
-          <button @click="showNewPatientModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
+          <div>
+            <h3 class="font-black text-slate-900 text-base">新增個案資料</h3>
+            <p class="text-[11px] text-slate-400">單獨新增病患個案檔案，無需預先綁定看診醫師或約診排程</p>
+          </div>
+          <button @click="showNewPatientModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">✕</button>
         </div>
 
         <form @submit.prevent="createPatient" class="flex-1 overflow-y-auto space-y-3.5 py-3 pr-1 text-xs">
+          <!-- 姓名與病歷號 -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-700 font-bold mb-1">病患姓名 *</label>
-              <input type="text" v-model="newPatientForm.name" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="例：示範病患" />
+              <input type="text" v-model="newPatientForm.name" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" placeholder="例：陳大文" />
             </div>
             <div>
               <label class="block text-slate-700 font-bold mb-1">病歷號 *</label>
-              <input type="text" v-model="newPatientForm.chartNo" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="例：C20260905" />
+              <input 
+                type="text" 
+                v-model="newPatientForm.chartNo" 
+                @input="onNewPatientChartNoInput"
+                required 
+                class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-mono font-bold" 
+                placeholder="例：801010 或 19911010" 
+              />
             </div>
           </div>
 
+          <!-- 性別與年齡 (依病歷號自動計算) -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-slate-700 font-bold mb-1">性別</label>
+              <select v-model="newPatientForm.gender" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold">
+                <option value="女">女</option>
+                <option value="男">男</option>
+              </select>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-slate-700 font-bold">年齡</label>
+                <span v-if="calculateAgeFromChartNo(newPatientForm.chartNo) !== null" class="text-[10px] text-teal-700 font-bold">
+                  （依病歷號自動計算）
+                </span>
+              </div>
+              <input 
+                type="number" 
+                v-model.number="newPatientForm.age" 
+                class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-mono" 
+                placeholder="依病歷號自動帶入" 
+              />
+            </div>
+          </div>
+
+          <!-- 電話與 LINE ID -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-700 font-bold mb-1">聯絡電話</label>
-              <input type="text" v-model="newPatientForm.phone" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="09xx-xxx-xxx (選填)" />
+              <input type="text" v-model="newPatientForm.phone" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" placeholder="09xx-xxx-xxx (選填)" />
             </div>
             <div>
               <label class="block text-slate-700 font-bold mb-1">LINE ID</label>
-              <input type="text" v-model="newPatientForm.lineId" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="line_user123" />
+              <input type="text" v-model="newPatientForm.lineId" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-mono" placeholder="選填" />
             </div>
           </div>
 
+          <!-- 諮詢自費項目與目前狀態 -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-700 font-bold mb-1">諮詢自費項目 *</label>
@@ -6024,10 +6487,12 @@
             </div>
           </div>
 
+          <!-- 看診醫師 (選填，無需強制綁定) 與個案進度階段 -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-slate-700 font-bold mb-1">看診醫師 *</label>
+              <label class="block text-slate-700 font-bold mb-1">看診醫師 (選填)</label>
               <select v-model="newPatientForm.doctor" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold">
+                <option value="">(尚未指派醫師)</option>
                 <option v-for="doc in clinicDoctors" :key="doc.id" :value="doc.name">{{ doc.fullTitle }}</option>
               </select>
             </div>
@@ -6048,7 +6513,7 @@
             <input type="text" v-model="newPatientForm.leadDoctors" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" placeholder="例：TE, 欣 或 銘, TE" />
           </div>
 
-          <!-- 藥物過敏史與全身性疾病放同一行 -->
+          <!-- 藥物過敏史與全身性疾病 -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-700 font-bold mb-1 flex items-center justify-between">
@@ -6067,14 +6532,9 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-slate-700 font-bold mb-1">個案主訴與期望</label>
-            <textarea v-model="newPatientForm.chiefComplaint" rows="2" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none" placeholder="說明缺牙位置、期待美觀度或生活困擾..."></textarea>
-          </div>
-
           <div class="pt-3 border-t border-slate-100 flex justify-end gap-2 flex-shrink-0">
-            <button type="button" @click="showNewPatientModal = false" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold text-slate-600">取消</button>
-            <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold shadow-xs">建立個案</button>
+            <button type="button" @click="showNewPatientModal = false" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold text-slate-600 cursor-pointer">取消</button>
+            <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-xs cursor-pointer">建立個案資料</button>
           </div>
         </form>
       </div>
@@ -8388,6 +8848,14 @@
         const showT3TopBanner = ref(true);
         const dashboardT3Tab = ref('pending');
         const t3ModalFilter = ref('pending');
+
+        // 提示功能 I & II：今日到診後續約診提醒與未報到改約提醒
+        const showTodayFollowupBanner = ref(true);
+        const showTodayRescheduleBanner = ref(true);
+        const showTodayFollowupModal = ref(false);
+        const showTodayRescheduleModal = ref(false);
+        const todayFollowupModalFilter = ref('pending');
+        const todayRescheduleModalFilter = ref('pending');
         const showToast = ref(false);
         const copyToastMessage = ref('');
 
@@ -10650,6 +11118,186 @@
           return pendingT3Reminders.value;
         });
 
+        // ==============================================
+        // 提示功能 I：今日到診病患後續預約提醒 (看診後提醒當日預約下次到診時間)
+        // ==============================================
+        const todayFollowupReminders = computed(() => {
+          const todayStr = clinicToday.value;
+          return appointments.value
+            .filter(app => app.date === todayStr && ['已報到', '看診中', '已完成'].includes(app.status))
+            .map(app => {
+              const patient = patients.value.find(p => (app.patientId && String(p.id) === String(app.patientId)) || (app.patientName && p.name === app.patientName)) || {};
+              const chartNo = patient.chartNo || app.patientChartNo || app.chartNo || '';
+              const items = (Array.isArray(app.treatmentItems) && app.treatmentItems.length > 0)
+                ? app.treatmentItems
+                : (app.procedure ? app.procedure.split(/[,、，\s]+/).filter(Boolean) : (app.category ? [app.category] : []));
+              const treatmentItemsText = items.length > 0 ? items.join('、') : (app.procedure || app.category || '一般門診');
+
+              // 檢查該病患是否已預約未來約診
+              const futureApp = appointments.value.find(a => 
+                ((app.patientId && String(a.patientId) === String(app.patientId)) || (app.patientName && a.patientName === app.patientName)) &&
+                (a.date > todayStr || (a.date === todayStr && a.time > app.time && a.id !== app.id))
+              );
+              const hasNextApp = !!futureApp;
+              const nextAppInfo = futureApp ? `${futureApp.date} ${futureApp.time} (${futureApp.doctor || '醫師'})` : '';
+
+              return {
+                ...app,
+                patient,
+                patientChartNo: chartNo,
+                treatmentItems: items,
+                treatmentItemsText,
+                phone: patient.phone || app.phone || '',
+                patientLineId: patient.lineId || app.lineId || '',
+                hasNextApp,
+                nextAppInfo,
+                followupDone: !!(app.followupDone || hasNextApp)
+              };
+            })
+            .sort((a, b) => {
+              if (a.followupDone !== b.followupDone) return a.followupDone ? 1 : -1;
+              return (a.time || '').localeCompare(b.time || '');
+            });
+        });
+
+        const todayFollowupPendingCount = computed(() => todayFollowupReminders.value.filter(r => !r.followupDone).length);
+        const todayFollowupDoneCount = computed(() => todayFollowupReminders.value.filter(r => r.followupDone).length);
+        const todayFollowupCount = computed(() => todayFollowupReminders.value.length);
+
+        const displayedTodayFollowupList = computed(() => {
+          if (todayFollowupModalFilter.value === 'pending') {
+            return todayFollowupReminders.value.filter(r => !r.followupDone);
+          }
+          if (todayFollowupModalFilter.value === 'done') {
+            return todayFollowupReminders.value.filter(r => r.followupDone);
+          }
+          return todayFollowupReminders.value;
+        });
+
+        // ==============================================
+        // 提示功能 II：今日無法前來 / 未報到病患改約提醒
+        // ==============================================
+        const todayRescheduleReminders = computed(() => {
+          const todayStr = clinicToday.value;
+          return appointments.value
+            .filter(app => app.date === todayStr && (app.status === '未報到' || app.status === '未到'))
+            .map(app => {
+              const patient = patients.value.find(p => (app.patientId && String(p.id) === String(app.patientId)) || (app.patientName && p.name === app.patientName)) || {};
+              const chartNo = patient.chartNo || app.patientChartNo || app.chartNo || '';
+              const items = (Array.isArray(app.treatmentItems) && app.treatmentItems.length > 0)
+                ? app.treatmentItems
+                : (app.procedure ? app.procedure.split(/[,、，\s]+/).filter(Boolean) : (app.category ? [app.category] : []));
+              const treatmentItemsText = items.length > 0 ? items.join('、') : (app.procedure || app.category || '一般門診');
+
+              return {
+                ...app,
+                patient,
+                patientChartNo: chartNo,
+                treatmentItems: items,
+                treatmentItemsText,
+                phone: patient.phone || app.phone || '',
+                patientLineId: patient.lineId || app.lineId || '',
+                rescheduledDone: !!app.rescheduledDone
+              };
+            })
+            .sort((a, b) => {
+              if (a.rescheduledDone !== b.rescheduledDone) return a.rescheduledDone ? 1 : -1;
+              return (a.time || '').localeCompare(b.time || '');
+            });
+        });
+
+        const todayReschedulePendingCount = computed(() => todayRescheduleReminders.value.filter(r => !r.rescheduledDone).length);
+        const todayRescheduleDoneCount = computed(() => todayRescheduleReminders.value.filter(r => r.rescheduledDone).length);
+        const todayRescheduleCount = computed(() => todayRescheduleReminders.value.length);
+
+        const displayedTodayRescheduleList = computed(() => {
+          if (todayRescheduleModalFilter.value === 'pending') {
+            return todayRescheduleReminders.value.filter(r => !r.rescheduledDone);
+          }
+          if (todayRescheduleModalFilter.value === 'done') {
+            return todayRescheduleReminders.value.filter(r => r.rescheduledDone);
+          }
+          return todayRescheduleReminders.value;
+        });
+
+        // 提示功能 LINE 範本與操作函式
+        const copyTodayFollowupLineTemplate = (rem) => {
+          const pName = rem.patientName || '病患先生/小姐';
+          const doc = rem.doctor || '醫師';
+          const clinicName = (systemSettings.value && systemSettings.value.clinic && systemSettings.value.clinic.name) || '健和牙醫診所';
+          const text = `【${clinicName}】回診預約提醒\n${pName} 您好：\n感謝您今日前來本院看診！\n為維持您的牙齒治療進度與最佳療效，提醒您看診後請記得與櫃檯或個管師預約下次看診時間喔！\n\n若返家後有任何牙齒不適或衛教疑問，歡迎隨時回覆訊息與我們聯絡。\n${clinicName} 祝您健康順心！`;
+          navigator.clipboard.writeText(text).then(() => {
+            alert(`已成功複製【${pName}】專屬回診預約 LINE 提醒範本！`);
+          }).catch(() => {
+            alert('複製失敗，請手動複製');
+          });
+        };
+
+        const copyTodayRescheduleLineTemplate = (rem) => {
+          const pName = rem.patientName || '病患先生/小姐';
+          const doc = rem.doctor || '醫師';
+          const clinicName = (systemSettings.value && systemSettings.value.clinic && systemSettings.value.clinic.name) || '健和牙醫診所';
+          const text = `【${clinicName}】看診改約關懷通知\n${pName} 您好：\n今日原訂安排您由 ${doc} 看診，因今日您未能如期前來，診所同仁十分關心您的狀況。\n\n為避免耽擱您的治療排程，個管師將協助您重新安排合適的看診時段。請直接回覆此訊息您方便的日期與時段，或來電診所由專人為您保留看診時間。\n\n${clinicName} 關心您的牙齒健康！`;
+          navigator.clipboard.writeText(text).then(() => {
+            alert(`已成功複製【${pName}】專屬改約關懷 LINE 範本！`);
+          }).catch(() => {
+            alert('複製失敗，請手動複製');
+          });
+        };
+
+        const scheduleNextAppointmentFor = (rem) => {
+          showTodayFollowupModal.value = false;
+          const p = rem.patient && rem.patient.id ? rem.patient : patients.value.find(x => x.name === rem.patientName || x.id === rem.patientId);
+          if (p) {
+            openAppointmentForPatient(p);
+          } else {
+            openNewAppointmentModal();
+            newAppointmentForm.value.newPatientName = rem.patientName || '';
+            newAppointmentForm.value.newPatientPhone = rem.phone || '';
+            newAppointmentForm.value.doctor = rem.doctor || 'TE 醫師';
+          }
+        };
+
+        const scheduleRescheduleAppointmentFor = (rem) => {
+          showTodayRescheduleModal.value = false;
+          const p = rem.patient && rem.patient.id ? rem.patient : patients.value.find(x => x.name === rem.patientName || x.id === rem.patientId);
+          if (p) {
+            openAppointmentForPatient(p);
+            newAppointmentForm.value.notes = `${rem.patientName} 改約（原約診 ${rem.date} ${rem.time} 未到）`;
+          } else {
+            openNewAppointmentModal();
+            newAppointmentForm.value.newPatientName = rem.patientName || '';
+            newAppointmentForm.value.newPatientPhone = rem.phone || '';
+            newAppointmentForm.value.doctor = rem.doctor || 'TE 醫師';
+            newAppointmentForm.value.notes = `${rem.patientName} 改約（原約診 ${rem.date} ${rem.time} 未到）`;
+          }
+        };
+
+        const toggleTodayFollowupDone = (rem) => {
+          const targetApp = appointments.value.find(a => a.id === rem.id);
+          if (targetApp) {
+            targetApp.followupDone = !targetApp.followupDone;
+            saveToStorage();
+          }
+        };
+
+        const toggleTodayRescheduled = (rem) => {
+          const targetApp = appointments.value.find(a => a.id === rem.id);
+          if (targetApp) {
+            targetApp.rescheduledDone = !targetApp.rescheduledDone;
+            saveToStorage();
+          }
+        };
+
+        const onNewPatientChartNoInput = () => {
+          if (newPatientForm.value && newPatientForm.value.chartNo) {
+            const autoAge = calculateAgeFromChartNo(newPatientForm.value.chartNo);
+            if (autoAge !== null && autoAge >= 0) {
+              newPatientForm.value.age = autoAge;
+            }
+          }
+        };
+
         const generateLineTemplate = (rem, templateKey = 't3Reminder') => {
           const tpl = (systemSettings.value.lineTemplates && systemSettings.value.lineTemplates[templateKey]) 
             || DEFAULT_LINE_TEMPLATES[templateKey] 
@@ -12434,25 +13082,30 @@
         };
 
         const openNewPatientModal = () => {
+          const defaultChart = 'C' + new Date().toISOString().slice(2, 10).replace(/-/g, '');
           newPatientForm.value = {
             name: '',
-            chartNo: 'C' + new Date().toISOString().slice(2, 10).replace(/-/g, ''),
+            chartNo: defaultChart,
             gender: '女',
-            age: 35,
+            age: null,
             phone: '',
             lineId: '',
             leadStatus: '治療中',
             pipelineStage: '1. 初診諮詢',
             consultCategory: '植牙 (IMP)',
-            doctor: 'TE 醫師',
-            leadDoctors: 'TE',
+            doctor: '',
+            leadDoctors: '',
             caseManager: '螺絲小姐',
-            projectTotal: 80000,
+            projectTotal: 0,
             drugAllergiesInput: '',
             systemicDiseasesInput: '',
             medicalAlertsInput: '',
             chiefComplaint: ''
           };
+          const autoAge = calculateAgeFromChartNo(defaultChart);
+          if (autoAge !== null && autoAge >= 0) {
+            newPatientForm.value.age = autoAge;
+          }
           showNewPatientModal.value = true;
         };
 
@@ -12484,8 +13137,8 @@
             lineId: (newPatientForm.value.lineId || '').trim(),
             leadStatus: newPatientForm.value.leadStatus || '治療中',
             consultCategory: newPatientForm.value.consultCategory,
-            doctor: newPatientForm.value.doctor,
-            leadDoctors: newPatientForm.value.leadDoctors || newPatientForm.value.doctor.replace(' 醫師', ''),
+            doctor: newPatientForm.value.doctor || '尚未指派',
+            leadDoctors: newPatientForm.value.leadDoctors || (newPatientForm.value.doctor ? newPatientForm.value.doctor.replace(' 醫師', '') : ''),
             caseManager: newPatientForm.value.caseManager || '螺絲小姐',
             projectTotal: Number(newPatientForm.value.projectTotal) || 0,
             paidAmount: 0,
@@ -13144,6 +13797,29 @@
           calculateAgeFromChartNo,
           getAppointmentStatusBadgeClass,
           onEditPatientChartNoInput,
+          onNewPatientChartNoInput,
+          showTodayFollowupBanner,
+          showTodayRescheduleBanner,
+          showTodayFollowupModal,
+          showTodayRescheduleModal,
+          todayFollowupModalFilter,
+          todayRescheduleModalFilter,
+          todayFollowupReminders,
+          todayFollowupPendingCount,
+          todayFollowupDoneCount,
+          todayFollowupCount,
+          displayedTodayFollowupList,
+          todayRescheduleReminders,
+          todayReschedulePendingCount,
+          todayRescheduleDoneCount,
+          todayRescheduleCount,
+          displayedTodayRescheduleList,
+          copyTodayFollowupLineTemplate,
+          copyTodayRescheduleLineTemplate,
+          scheduleNextAppointmentFor,
+          scheduleRescheduleAppointmentFor,
+          toggleTodayFollowupDone,
+          toggleTodayRescheduled,
           paymentTargetPatient,
           showT3ReminderModal,
           showT3TopBanner,
