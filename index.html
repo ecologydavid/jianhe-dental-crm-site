@@ -1218,7 +1218,7 @@
                         <div class="min-w-0">
                           <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-bold text-sm text-slate-900 group-hover:text-blue-700 transition-colors">{{ a.patientName }}</span>
-                            <span class="px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded text-[10px] font-semibold">{{ a.time }} ({{ a.chair }})</span>
+                            <span class="px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded text-[10px] font-semibold">{{ a.time }}</span>
                             <span class="px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded text-[10px]">{{ a.doctor }}</span>
                             <span class="px-1.5 py-0.2 bg-emerald-50 text-emerald-800 rounded text-[10px] font-medium">{{ a.category }}</span>
                           </div>
@@ -2046,8 +2046,8 @@
                           <div class="text-[10px] text-slate-400 font-medium">{{ app.duration || 60 }} 分鐘</div>
                         </div>
                         
-                        <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                          {{ app.chair }}
+                        <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 flex items-center justify-center font-bold text-xs flex-shrink-0" :title="app.doctor">
+                          {{ app.doctor ? app.doctor.replace(' 醫師', '').replace('醫師', '').charAt(0) : '診' }}
                         </div>
 
                         <div class="min-w-0 flex-1">
@@ -2087,10 +2087,10 @@
                         >
                           <option value="已預約">已預約</option>
                           <option value="已報到">已報到</option>
+                          <option value="未報到">未報到</option>
                           <option value="看診中">看診中</option>
                           <option value="已完成">已完成</option>
                           <option value="改期">改期</option>
-                          <option value="未到">未到</option>
                         </select>
 
                         <button 
@@ -2318,12 +2318,12 @@
                         getCalendarChipClass(app.category),
                         draggedCalendarApp && draggedCalendarApp.id === app.id ? 'opacity-40 scale-95 ring-2 ring-brand-400' : 'shadow-2xs'
                       ]"
-                      :title="`${app.time} ${app.patientName} | 醫師: ${app.doctor || '未指定'} | 項目: ${getAppTreatmentItemsText(app)} - 點擊查看`"
+                      :title="`${getAppointmentTimeRange(app)} ${app.patientName} | 醫師: ${formatDoctorDisplay(app.doctor)} | 項目: ${getAppTreatmentItemsText(app)} - 點擊查看`"
                     >
                       <!-- 第一列：[約診時間] [病患名稱] [醫師名稱] -->
                       <div class="flex items-center justify-between gap-1">
                         <div class="flex items-center gap-1.5 min-w-0">
-                          <span class="font-mono font-black text-xs text-slate-800 tracking-tight flex-shrink-0">{{ app.time }}</span>
+                          <span class="font-mono font-black text-xs text-slate-800 tracking-tight flex-shrink-0">{{ getAppointmentTimeRange(app) }}</span>
                           <span class="font-black text-xs text-slate-900 truncate">{{ app.patientName }}</span>
                         </div>
                         <span v-if="app.doctor" class="font-extrabold text-[10px] text-teal-800 bg-white/90 border border-teal-200/80 px-1 py-0.2 rounded flex-shrink-0 shadow-2xs whitespace-nowrap">
@@ -2335,9 +2335,9 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span>
                         <span class="truncate" :title="getAppTreatmentItemsText(app)">{{ getAppTreatmentItemsText(app) }}</span>
                       </div>
-                      <!-- 在一週長條模式下，額外顯示時長與診椅，更具臨床專業度 -->
+                      <!-- 在一週長條模式下，額外顯示時長與醫師，更具臨床專業度 -->
                       <div v-if="calendarViewSpan === 'week'" class="text-[10px] text-slate-500 font-semibold flex items-center justify-between mt-1 pt-1 border-t border-slate-200/60">
-                        <span v-if="app.chair" class="font-bold text-slate-700 bg-white/70 px-1 rounded">{{ app.chair }}</span>
+                        <span class="font-bold text-slate-700 bg-white/70 px-1 rounded">{{ app.doctor }}</span>
                         <span v-if="app.duration" class="font-mono">{{ app.duration }}分鐘</span>
                       </div>
                     </div>
@@ -2571,7 +2571,7 @@
                           📁 資料夾
                         </button>
                         <button 
-                          @click.stop="deletePatient(p.id)" 
+                          @click.stop="promptDeletePatient(p)" 
                           class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
                           title="刪除此病患個案與相關排程"
                         >
@@ -3405,17 +3405,6 @@
             >
               <span>✏️</span> 編輯資料
             </button>
-            <button 
-              v-if="!isEditingPatient" 
-              @click="deletePatient(selectedPatient.id)" 
-              class="px-2.5 sm:px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
-              title="刪除此病患個案"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-              </svg>
-              <span>刪除個案</span>
-            </button>
             <div v-else class="flex items-center gap-1.5">
               <button 
                 @click="savePatientEdits" 
@@ -3494,6 +3483,7 @@
                 <input 
                   type="text" 
                   v-model="editPatientForm.chartNo" 
+                  @input="onEditPatientChartNoInput"
                   required 
                   class="w-full p-2 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-mono font-bold" 
                 />
@@ -3506,11 +3496,17 @@
                 </select>
               </div>
               <div>
-                <label class="block text-slate-700 font-bold mb-1">年齡</label>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-slate-700 font-bold">年齡</label>
+                  <span v-if="calculateAgeFromChartNo(editPatientForm.chartNo) !== null" class="text-[10px] text-teal-700 dark:text-teal-400 font-bold">
+                    （依病歷號自動計算）
+                  </span>
+                </div>
                 <input 
                   type="number" 
                   v-model.number="editPatientForm.age" 
                   class="w-full p-2 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none" 
+                  placeholder="依病歷號自動帶入"
                 />
               </div>
               <div>
@@ -3748,13 +3744,24 @@
               <div 
                 v-for="app in getPatientAppointments(selectedPatient.id)" 
                 :key="app.id"
-                class="p-3 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl flex items-center justify-between text-xs transition-colors"
+                :class="hasAppointmentDuplicateWarning(app) ? 'border-rose-300 bg-rose-50/30 dark:bg-rose-950/30 ring-1 ring-rose-300' : 'border-slate-200 bg-slate-50'"
+                class="p-3 hover:bg-slate-100/70 border rounded-xl flex items-center justify-between text-xs transition-colors"
               >
-                <div>
-                  <div class="font-bold text-slate-900 flex items-center gap-2">
-                    <span>{{ app.date }} {{ app.time }}</span>
-                    <span class="text-slate-400 font-normal">({{ app.duration || 60 }}分鐘)</span>
-                    <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold">{{ app.chair }} · {{ app.doctor }}</span>
+                <div class="min-w-0 flex-1 pr-2">
+                  <div class="font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                    <span>{{ app.date }}</span>
+                    <span class="text-slate-300 font-normal">|</span>
+                    <span class="font-black text-slate-900">{{ getAppointmentTimeRange(app) }}</span>
+                    <span class="text-slate-500 font-normal">({{ app.duration || 60 }}分鐘 {{ formatDoctorDisplay(app.doctor) }})</span>
+                    <span v-if="hasAppointmentDuplicateWarning(app)" class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-extrabold flex items-center gap-0.5">
+                      <span>⚠️ 重複約診時段</span>
+                    </span>
+                  </div>
+
+                  <!-- ⚠️ 重複約診顯著提醒橫幅（如 9/11 16:00 等重複時段即時示警） -->
+                  <div v-if="hasAppointmentDuplicateWarning(app)" class="mt-2 p-2 bg-rose-100/90 dark:bg-rose-950/70 border border-rose-300 dark:border-rose-800 rounded-lg text-[11px] font-bold text-rose-800 dark:text-rose-200 flex items-start gap-1.5">
+                    <span class="text-sm flex-shrink-0">⚠️</span>
+                    <span>【重複約診提醒】此約診時間（{{ getAppointmentTimeRange(app) }}）與同日另一筆約診重疊！請確認是否重複排程，如為多餘請點擊右側 🗑️ 刪除。</span>
                   </div>
                   <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
                     療程：{{ app.category }} ｜ 當日看診項目：{{ getAppTreatmentItemsText(app) }}
@@ -3800,9 +3807,9 @@
                 <div class="flex items-center gap-2 flex-shrink-0">
                   <button 
                     @click.stop="toggleAppointmentStatus(app)"
-                    class="px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors"
-                    :class="app.status === '已報到' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'"
-                    title="點擊切換報到狀態"
+                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors border shadow-2xs"
+                    :class="getAppointmentStatusBadgeClass(app.status)"
+                    :title="`點擊切換狀態（目前：${app.status || '已預約'}，點擊切換：已預約 ➔ 已報到 ➔ 未報到）`"
                   >
                     {{ app.status || '已預約' }}
                   </button>
@@ -3861,6 +3868,24 @@
               rows="3" 
               class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-brand-500 outline-none"
             ></textarea>
+          </div>
+
+          <!-- 🗑️ 個案危險管理區塊（刪除病患個案，對齊圖一紅框標示處） -->
+          <div class="pt-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2">
+            <div class="text-[11px] text-slate-400 dark:text-slate-500">
+              ⚠️ 如需刪除此病患個案與相關排程請至此操作
+            </div>
+            <button 
+              type="button"
+              @click="promptDeletePatient(selectedPatient)" 
+              class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              title="刪除此病患個案"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+              <span>🗑️ 刪除個案</span>
+            </button>
           </div>
         </div>
 
@@ -5855,16 +5880,20 @@
             <div class="flex items-center justify-between text-rose-800 font-extrabold text-sm">
               <span class="flex items-center gap-1.5">
                 <span class="text-base">🚨</span>
-                <span>時段衝突錯誤：同一位病患時間重疊！</span>
+                <span v-if="patientConflictingAppointment.isExactDup">重複約診警告：此時段已有相同預約！</span>
+                <span v-else-if="patientConflictingAppointment.isSamePatient">時段衝突錯誤：同一位病患時間重疊！</span>
+                <span v-else>醫師時段衝突：【{{ patientConflictingAppointment.doctor }}】此時段已有約診！</span>
               </span>
-              <span class="text-[10px] px-2 py-0.5 bg-rose-200 text-rose-900 rounded font-black">時間重疊</span>
+              <span class="text-[10px] px-2 py-0.5 bg-rose-200 text-rose-900 rounded font-black">
+                {{ patientConflictingAppointment.isExactDup ? '重複約診' : '時間重疊' }}
+              </span>
             </div>
 
             <div class="text-slate-700 bg-white p-2 rounded-lg border border-rose-200 text-xs space-y-1">
               <div>
-                病患在 <strong class="text-slate-900">{{ newAppointmentForm.date }}</strong> 已排有約診：
-                <strong class="text-rose-700 font-bold">【{{ patientConflictingAppointment.doctor }} · {{ patientConflictingAppointment.chair }}】{{ patientConflictingAppointment.exStartTime }} - {{ patientConflictingAppointment.exEndTime }}</strong>
-                （{{ patientConflictingAppointment.category }}，{{ patientConflictingAppointment.duration }}分鐘）
+                在 <strong class="text-slate-900">{{ newAppointmentForm.date }}</strong> 已排有約診：
+                <strong class="text-rose-700 font-bold">【{{ patientConflictingAppointment.doctor }}】{{ patientConflictingAppointment.exStartTime }} - {{ patientConflictingAppointment.exEndTime }}</strong>
+                （{{ patientConflictingAppointment.patientName }} ｜ {{ patientConflictingAppointment.category }}，{{ patientConflictingAppointment.duration }}分鐘）
               </div>
               <div class="text-rose-600 font-bold">
                 您輸入的時間 <span class="font-mono bg-rose-100 px-1.5 py-0.5 rounded font-black">{{ newAppointmentForm.time }} ~ {{ patientConflictingAppointment.proposedEndTime }}</span> 與此時段<strong>發生重疊</strong>，無法排程！
@@ -8187,6 +8216,76 @@
       </div>
     </div>
 
+    <!-- ============================================== -->
+    <!-- MODAL 9: 刪除病患個案再次確認彈窗 (Delete Patient Confirm Modal) -->
+    <!-- ============================================== -->
+    <div v-if="showDeletePatientConfirmModal && patientToDelete" v-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+      <div class="bg-white dark:bg-slate-850 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-rose-100 dark:border-rose-900/50 space-y-4 animate-in zoom-in-95 duration-150">
+        <!-- 彈窗頂部 Header -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl flex-shrink-0">
+            ⚠️
+          </div>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-base font-black text-slate-900 dark:text-white">確定要刪除此病患個案？</h3>
+            <p class="text-xs text-rose-600 dark:text-rose-400 font-bold">此動作無法復原，請再次確認</p>
+          </div>
+          <button @click="showDeletePatientConfirmModal = false; patientToDelete = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-sm cursor-pointer">✕</button>
+        </div>
+
+        <!-- 欲刪除病患資訊卡片 -->
+        <div class="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-extrabold text-slate-900 dark:text-white">
+              {{ patientToDelete.name }}
+            </span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold" :class="getLeadStatusBadgeClass(patientToDelete.leadStatus)">
+              {{ patientToDelete.leadStatus || '治療中' }}
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-slate-600 dark:text-slate-400 pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
+            <div>病歷號：<strong class="font-mono text-slate-800 dark:text-slate-200">{{ patientToDelete.chartNo ? '#' + patientToDelete.chartNo : '無' }}</strong></div>
+            <div>電話：<strong class="font-mono text-slate-800 dark:text-slate-200">{{ patientToDelete.phone || '無電話' }}</strong></div>
+            <div>主治醫師：<strong class="text-slate-800 dark:text-slate-200">{{ patientToDelete.doctor || '未指派' }}</strong></div>
+            <div>關聯約診：<strong class="text-rose-600 dark:text-rose-400">{{ getPatientAppointments(patientToDelete.id).length }} 筆</strong></div>
+          </div>
+        </div>
+
+        <!-- 刪除警示提醒 -->
+        <div class="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-300 space-y-1">
+          <div class="font-bold flex items-center gap-1">
+            <span>🗑️ 連帶清理項目：</span>
+          </div>
+          <ul class="list-disc list-inside space-y-0.5 text-[11px] text-rose-700 dark:text-rose-400">
+            <li>此病患將從「病患資料庫」中永久移除</li>
+            <li>該個案所有門診約診排程將一併清理</li>
+            <li>相關技工訂單與術後關懷任務將同步清理</li>
+          </ul>
+        </div>
+
+        <!-- 底部確認按鈕 -->
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <button 
+            type="button"
+            @click="showDeletePatientConfirmModal = false; patientToDelete = null"
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            取消
+          </button>
+          <button 
+            type="button"
+            @click="executeDeletePatient"
+            class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            <span>確認刪除（無法復原）</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Vue 3 核心應用邏輯 -->
@@ -10197,6 +10296,107 @@
           return `${h}:${m}`;
         };
 
+        const getAppointmentEndTime = (app) => {
+          if (!app || !app.time) return '';
+          const startMin = timeToMinutes(app.time);
+          const dur = Number(app.duration) || 60;
+          return minutesToTime(startMin + dur);
+        };
+
+        const getAppointmentTimeRange = (app) => {
+          if (!app || !app.time) return '';
+          const endTime = getAppointmentEndTime(app);
+          return `${app.time}-${endTime}`;
+        };
+
+        const formatDoctorDisplay = (doc) => {
+          if (!doc) return '未指定醫師';
+          let d = String(doc).replace(/^[A-Za-z0-9\u4e00-\u9fa5]+診\s*[·・\-]\s*/, '').trim();
+          d = d.replace(/\s+/g, '');
+          if (!d.endsWith('醫師') && !d.endsWith('院長') && !d.endsWith('主任')) {
+            d += '醫師';
+          }
+          return d;
+        };
+
+        const calculateAgeFromChartNo = (chartNo) => {
+          if (!chartNo) return null;
+          const clean = String(chartNo).replace(/^#/, '').trim();
+          const digits = clean.replace(/\D/g, '');
+          if (!digits || digits.length < 2) return null;
+
+          const currentYear = clinicToday.value ? parseInt(clinicToday.value.slice(0, 4), 10) : 2026;
+          const currentROC = currentYear - 1911; // 民國 115 年
+
+          // 1. 8 碼西元生日 (YYYYMMDD，例如 19911010)
+          if (digits.length === 8 && (digits.startsWith('19') || digits.startsWith('20'))) {
+            const y = parseInt(digits.slice(0, 4), 10);
+            const age = currentYear - y;
+            return age >= 0 && age <= 130 ? age : null;
+          }
+
+          // 2. 7 碼民國格式 (民國 3 碼 + 月日 4 碼，例如 1020512 代表民國 102 年)
+          if (digits.length === 7) {
+            const y = parseInt(digits.slice(0, 3), 10);
+            if (y > 0 && y <= currentROC) {
+              return currentROC - y;
+            }
+          }
+
+          // 3. 6 碼標準台灣牙醫病歷號格式 (民國 2 碼 + 月日 4 碼，例如 530813 代表民國 53 年，801010 代表民國 80 年)
+          if (digits.length === 6) {
+            const y = parseInt(digits.slice(0, 2), 10);
+            if (y >= 0 && y <= 99) {
+              return currentROC - y;
+            }
+          }
+
+          // 4. 輸入中或其它長度：若前 3 碼符合合理民國年 (100 ~ 當前民國年)
+          if (digits.length >= 3) {
+            const first3 = parseInt(digits.slice(0, 3), 10);
+            if (first3 >= 100 && first3 <= currentROC) {
+              return currentROC - first3;
+            }
+          }
+
+          // 5. 否則取前 2 碼民國年 (10 ~ 99)
+          const first2 = parseInt(digits.slice(0, 2), 10);
+          if (first2 >= 10 && first2 <= 99) {
+            return currentROC - first2;
+          }
+
+          return null;
+        };
+
+        const getAppointmentStatusBadgeClass = (status) => {
+          if (status === '已報到') {
+            return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800';
+          }
+          if (status === '未報到' || status === '未到') {
+            return 'bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-300 font-extrabold dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800';
+          }
+          return 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+        };
+
+        // 監聽病歷號輸入：即時自動計算年齡並帶入年齡欄位
+        watch(() => editPatientForm.value?.chartNo, (newVal) => {
+          if (newVal) {
+            const autoAge = calculateAgeFromChartNo(newVal);
+            if (autoAge !== null && autoAge >= 0) {
+              editPatientForm.value.age = autoAge;
+            }
+          }
+        });
+
+        watch(() => newPatientForm.value?.chartNo, (newVal) => {
+          if (newVal) {
+            const autoAge = calculateAgeFromChartNo(newVal);
+            if (autoAge !== null && autoAge >= 0) {
+              newPatientForm.value.age = autoAge;
+            }
+          }
+        });
+
         // 今日門診排程 (動態綁定校正後真實系統今日日期，嚴格依時間由早到晚排序)
         const todayAppointmentsList = computed(() => {
           return [...appointments.value]
@@ -10215,27 +10415,49 @@
 
         // 偵測所選病患在所選日期之既有約診 (支援同日跨專科多醫師逐條排程，依時間由早到晚排序)
         const patientExistingAppsOnSelectedDate = computed(() => {
-          const pId = appointmentPatientMode.value === 'existing' 
-            ? newAppointmentForm.value.patientId 
-            : null;
-          if (!pId || !newAppointmentForm.value.date) return [];
+          if (!newAppointmentForm.value.date) return [];
+          let targetPid = null;
+          let targetPname = '';
+          if (appointmentPatientMode.value === 'existing') {
+            targetPid = newAppointmentForm.value.patientId;
+            const p = patients.value.find(item => item.id === targetPid);
+            if (p) targetPname = p.name;
+          } else {
+            targetPname = (newAppointmentForm.value.newPatientName || '').trim();
+            const p = patients.value.find(item => 
+              (newAppointmentForm.value.newPatientChartNo && item.chartNo && String(item.chartNo).trim() === String(newAppointmentForm.value.newPatientChartNo).trim()) ||
+              (targetPname && item.name === targetPname)
+            );
+            if (p) {
+              targetPid = p.id;
+              targetPname = p.name;
+            }
+          }
+          if (!targetPid && !targetPname) return [];
+
           return appointments.value
-            .filter(a => a.patientId === pId && a.date === newAppointmentForm.value.date)
+            .filter(a => {
+              if (a.date !== newAppointmentForm.value.date) return false;
+              if (targetPid && a.patientId === targetPid) return true;
+              if (targetPname && a.patientName && a.patientName.trim() === targetPname.trim()) return true;
+              return false;
+            })
             .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
         });
 
-        // 核心：偵測時間是否重疊衝突（錯誤狀態）
-        // 規則：同一位病患在同天若已有約診（例如 14:00 預約），接下來的時間不能重複，只能往前或往後；只有出現重複才有警告，其餘讓使用者自由輸入
+        // 核心：偵測時間是否重疊衝突（重複約診/錯誤狀態）
+        // 規則：同一位病患在同天若已有約診，接下來的時間不能重複，只能往前或往後；同位醫師同天同時間也不能重疊
         const patientConflictingAppointment = computed(() => {
-          if (appointmentPatientMode.value !== 'existing') return null;
-          if (!newAppointmentForm.value.patientId || !newAppointmentForm.value.date || !newAppointmentForm.value.time) {
+          if (!newAppointmentForm.value.date || !newAppointmentForm.value.time) {
             return null;
           }
 
           const proposedStart = timeToMinutes(newAppointmentForm.value.time);
           const proposedDur = Number(newAppointmentForm.value.duration) || 60;
           const proposedEnd = proposedStart + proposedDur;
+          const targetDoc = newAppointmentForm.value.doctor;
 
+          // 1. 先檢查同一病患在當日的既有約診
           for (const exApp of patientExistingAppsOnSelectedDate.value) {
             const exStart = timeToMinutes(exApp.time);
             const exDur = Number(exApp.duration) || 60;
@@ -10244,21 +10466,81 @@
             // 判斷重疊：起始在對方結束前，且結束在對方起始後
             if (proposedStart < exEnd && proposedEnd > exStart) {
               const beforeStart = Math.max(0, exStart - proposedDur);
+              const isExactDup = Boolean(targetDoc && exApp.doctor === targetDoc) && proposedStart === exStart;
               return {
                 ...exApp,
+                isExactDup,
+                isSamePatient: true,
+                isSameDoctor: Boolean(targetDoc && exApp.doctor === targetDoc),
                 exStart,
                 exEnd,
                 exStartTime: exApp.time,
                 exEndTime: minutesToTime(exEnd),
                 proposedStartTime: newAppointmentForm.value.time,
                 proposedEndTime: minutesToTime(proposedEnd),
-                suggestBeforeTime: minutesToTime(beforeStart), // 往前排：正好在既有約診前結束
-                suggestAfterTime: minutesToTime(exEnd)         // 往後排：正好在既有約診結束後開始
+                suggestBeforeTime: minutesToTime(beforeStart),
+                suggestAfterTime: minutesToTime(exEnd)
               };
             }
           }
+
+          // 2. 再檢查同醫師既有約診 (若指派特定醫師，同一位醫師在同一時段無法重疊看兩筆排程)
+          if (targetDoc) {
+            for (const exApp of appointments.value) {
+              if (exApp.date !== newAppointmentForm.value.date) continue;
+              if (exApp.doctor !== targetDoc) continue;
+
+              const exStart = timeToMinutes(exApp.time);
+              const exDur = Number(exApp.duration) || 60;
+              const exEnd = exStart + exDur;
+
+              if (proposedStart < exEnd && proposedEnd > exStart) {
+                const beforeStart = Math.max(0, exStart - proposedDur);
+                return {
+                  ...exApp,
+                  isExactDup: proposedStart === exStart,
+                  isSamePatient: false,
+                  isSameDoctor: true,
+                  exStart,
+                  exEnd,
+                  exStartTime: exApp.time,
+                  exEndTime: minutesToTime(exEnd),
+                  proposedStartTime: newAppointmentForm.value.time,
+                  proposedEndTime: minutesToTime(proposedEnd),
+                  suggestBeforeTime: minutesToTime(beforeStart),
+                  suggestAfterTime: minutesToTime(exEnd)
+                };
+              }
+            }
+          }
+
           return null;
         });
+
+        // 偵測任一約診是否存在時段重複 (供約診清單即時警示，如 9/11 16:00 等重複排程)
+        const hasAppointmentDuplicateWarning = (app) => {
+          if (!app || !app.date || !app.time) return false;
+          const appStart = timeToMinutes(app.time);
+          const appDur = Number(app.duration) || 60;
+          const appEnd = appStart + appDur;
+
+          return appointments.value.some(other => {
+            if (other.id === app.id) return false;
+            if (other.date !== app.date) return false;
+
+            const isSamePatient = (app.patientId && other.patientId && app.patientId === other.patientId) ||
+              (app.patientName && other.patientName && app.patientName.trim() === other.patientName.trim());
+            const isSameDoctor = app.doctor && other.doctor && app.doctor === other.doctor;
+
+            if (!isSamePatient && !isSameDoctor) return false;
+
+            const oStart = timeToMinutes(other.time);
+            const oDur = Number(other.duration) || 60;
+            const oEnd = oStart + oDur;
+
+            return appStart < oEnd && appEnd > oStart;
+          });
+        };
 
         // ==============================================
         // 提醒啟動日 (T-3) 核心運算與狀態引擎
@@ -11278,7 +11560,15 @@
           // 檢查重疊錯誤狀態 (同一病患同日時間重疊為錯誤狀態，嚴禁儲存)
           if (patientConflictingAppointment.value) {
             const conflict = patientConflictingAppointment.value;
-            alert(`🚨 時段重疊錯誤：同一位病患無法在重疊時間看診！\n\n病患已安排約診：\n【${conflict.doctor} · ${conflict.chair}】${conflict.exStartTime} - ${conflict.exEndTime}（${conflict.category}）\n\n您當前輸入的時間為 ${newAppointmentForm.value.time}，發生時間重疊！\n請將時間往前調整至 ${conflict.suggestBeforeTime} 之前，或往後調整至 ${conflict.suggestAfterTime} 之後。`);
+            let conflictMsg = '';
+            if (conflict.isExactDup) {
+              conflictMsg = `🚨 重複約診警告：此時段已有相同的預約排程！\n\n【${conflict.doctor}】於 ${conflict.time} 已安排【${conflict.patientName}】（${conflict.category}）。\n無法重複預約相同時段！`;
+            } else if (conflict.isSamePatient) {
+              conflictMsg = `🚨 時段重疊錯誤：同一位病患無法在重疊時間看診！\n\n病患已安排約診：\n【${conflict.doctor}】${conflict.exStartTime} - ${conflict.exEndTime}（${conflict.category}）\n\n您當前輸入的時間為 ${newAppointmentForm.value.time}，發生時間重疊！\n請將時間往前調整至 ${conflict.suggestBeforeTime} 之前，或往後調整至 ${conflict.suggestAfterTime} 之後。`;
+            } else {
+              conflictMsg = `🚨 醫師時段重疊錯誤：【${conflict.doctor}】在此時段已安排其他約診！\n\n已有約診：\n【${conflict.patientName}】${conflict.exStartTime} - ${conflict.exEndTime}（${conflict.category}）\n\n您當前輸入的時間為 ${newAppointmentForm.value.time}，請將時間調整至 ${conflict.suggestBeforeTime} 之前或 ${conflict.suggestAfterTime} 之後。`;
+            }
+            alert(conflictMsg);
             return;
           }
 
@@ -11342,7 +11632,7 @@
               newAppointmentForm.value.chair = getDefaultChairForDoctor(otherDoc.name);
             }
 
-            alert(`✅ 約診已成功排入行事曆！\n【${newApp.patientName}】於 ${newApp.date} ${newApp.time} 由 ${newApp.doctor} (${newApp.chair}) 看診。\n\n👉 已為您保留病患資料，並已自動推移時段至 ${nextH}:${nextM}，看診項目已初始化重填，請接續選擇下一位醫師及診療項目。`);
+            alert(`✅ 約診已成功排入行事曆！\n【${newApp.patientName}】於 ${newApp.date} ${newApp.time} 由 ${newApp.doctor} 看診。\n\n👉 已為您保留病患資料，並已自動推移時段至 ${nextH}:${nextM}，看診項目已初始化重填，請接續選擇下一位醫師及診療項目。`);
           } else {
             showNewAppointmentModal.value = false;
             alert(`✅ 已成功為【${newApp.patientName}】建立約診排程（${newApp.date} ${newApp.time} 由 ${newApp.doctor} 看診），已獨立排入行事曆！`);
@@ -11358,11 +11648,28 @@
           }
         };
 
-        const deletePatient = (patientId) => {
+        const showDeletePatientConfirmModal = ref(false);
+        const patientToDelete = ref(null);
+
+        const promptDeletePatient = (patient) => {
+          if (!patient) return;
+          patientToDelete.value = patient;
+          showDeletePatientConfirmModal.value = true;
+        };
+
+        const executeDeletePatient = () => {
+          if (!patientToDelete.value) return;
+          const targetId = patientToDelete.value.id;
+          showDeletePatientConfirmModal.value = false;
+          patientToDelete.value = null;
+          deletePatient(targetId, true);
+        };
+
+        const deletePatient = (patientId, bypassConfirm = false) => {
           const target = patients.value.find(p => p.id === patientId);
           if (!target) return;
           const chartLabel = target.chartNo ? ` (病歷號: #${target.chartNo})` : '';
-          if (!confirm(`確定要刪除病患個案【${target.name}】${chartLabel} 嗎？\n\n⚠️ 注意：\n1. 此個案將從「病患資料庫」中永久移除\n2. 連動的約診排程與相關任務也將一併清理\n3. 此操作無法復原，請確認是否繼續？`)) return;
+          if (!bypassConfirm && !confirm(`確定要刪除病患個案【${target.name}】${chartLabel} 嗎？\n\n⚠️ 注意：\n1. 此個案將從「病患資料庫」中永久移除\n2. 連動的約診排程與相關任務也將一併清理\n3. 此操作無法復原，請確認是否繼續？`)) return;
 
           // 1. 從病患清單中移除
           patients.value = patients.value.filter(p => p.id !== patientId);
@@ -11400,7 +11707,13 @@
         };
 
         const toggleAppointmentStatus = (app) => {
-          app.status = app.status === '已報到' ? '已預約' : '已報到';
+          if (!app.status || app.status === '已預約') {
+            app.status = '已報到';
+          } else if (app.status === '已報到') {
+            app.status = '未報到';
+          } else {
+            app.status = '已預約';
+          }
           saveToStorage();
         };
 
@@ -11408,7 +11721,7 @@
           if (app.patientId) {
             viewPatientDetail(app.patientId);
           } else {
-            alert(`約診排程詳情：\n病患：${app.patientName}\n時間：${app.date} ${app.time} (${app.duration}分)\n診間：${app.chair} (${app.doctor})\n項目：${app.category}\n備忘：${app.notes || '無'}`);
+            alert(`約診排程詳情：\n病患：${app.patientName}\n時間：${app.date} ${app.time} (${app.duration}分)\n醫師：${app.doctor}\n項目：${app.category}\n備忘：${app.notes || '無'}`);
           }
         };
 
@@ -11446,11 +11759,13 @@
         const startEditingPatient = () => {
           if (!selectedPatient.value) return;
           const p = selectedPatient.value;
+          const autoAge = calculateAgeFromChartNo(p.chartNo);
+          const computedAge = (autoAge !== null && autoAge >= 0) ? autoAge : (p.age !== undefined ? p.age : 35);
           editPatientForm.value = {
             name: p.name || '',
             chartNo: p.chartNo || '',
             gender: p.gender || '女',
-            age: p.age !== undefined ? p.age : 35,
+            age: computedAge,
             phone: p.phone || '',
             lineId: p.lineId || '',
             leadStatus: p.leadStatus || '已成交',
@@ -11466,6 +11781,13 @@
             projectTotal: p.projectTotal || 0
           };
           isEditingPatient.value = true;
+        };
+
+        const onEditPatientChartNoInput = () => {
+          const autoAge = calculateAgeFromChartNo(editPatientForm.value.chartNo);
+          if (autoAge !== null && autoAge >= 0) {
+            editPatientForm.value.age = autoAge;
+          }
         };
 
         const cancelEditingPatient = () => {
@@ -11496,12 +11818,16 @@
           const pIndex = patients.value.findIndex(p => p.id === targetId);
           if (pIndex !== -1) {
             const oldP = patients.value[pIndex];
+            const autoAge = calculateAgeFromChartNo(editPatientForm.value.chartNo);
+            const resolvedAge = (editPatientForm.value.age !== undefined && editPatientForm.value.age !== null && editPatientForm.value.age !== '')
+              ? Number(editPatientForm.value.age)
+              : (autoAge !== null ? autoAge : (oldP.age || 0));
             const updatedP = {
               ...oldP,
               name: rawName,
               chartNo: (editPatientForm.value.chartNo || '').trim() || oldP.chartNo,
               gender: editPatientForm.value.gender || '女',
-              age: Number(editPatientForm.value.age) || 0,
+              age: resolvedAge,
               phone: (editPatientForm.value.phone || '').trim(),
               lineId: (editPatientForm.value.lineId || '').trim(),
               leadStatus: editPatientForm.value.leadStatus,
@@ -12469,7 +12795,8 @@
             case '看診中': return 'bg-emerald-600 text-white font-bold border-emerald-600';
             case '已報到': return 'bg-blue-600 text-white font-bold border-blue-600';
             case '已完成': return 'bg-slate-200 text-slate-700 border-slate-300';
-            case '未到': return 'bg-rose-100 text-rose-700 border-rose-300';
+            case '未報到':
+            case '未到': return 'bg-rose-100 text-rose-700 border-rose-300 font-bold';
             case '改期': return 'bg-amber-100 text-amber-700 border-amber-300';
             case '已預約': default: return 'bg-teal-50 text-teal-700 border border-teal-200';
           }
@@ -12811,6 +13138,12 @@
           patientConflictingAppointment,
           timeToMinutes,
           minutesToTime,
+          getAppointmentEndTime,
+          getAppointmentTimeRange,
+          formatDoctorDisplay,
+          calculateAgeFromChartNo,
+          getAppointmentStatusBadgeClass,
+          onEditPatientChartNoInput,
           paymentTargetPatient,
           showT3ReminderModal,
           showT3TopBanner,
@@ -12906,6 +13239,11 @@
           createAppointment,
           deleteAppointment,
           deletePatient,
+          showDeletePatientConfirmModal,
+          patientToDelete,
+          promptDeletePatient,
+          executeDeletePatient,
+          hasAppointmentDuplicateWarning,
           toggleAppointmentStatus,
           openAppointmentDetail,
           onAppointmentRowClick,
