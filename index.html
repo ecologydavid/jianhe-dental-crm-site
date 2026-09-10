@@ -2522,35 +2522,7 @@
                   <span>⚙️</span>
                   <span>自訂欄位</span>
                 </button>
-                <button 
-                  v-if="isSectionVisible('patientColContractAmount') || isSectionVisible('patientColPaymentProgress')"
-                  @click="hideFinancialColumns" 
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                  title="一鍵隱藏合約金額與收款進度（防窺/諮詢模式）"
-                >
-                  <span>🙈</span>
-                  <span>隱藏金額</span>
-                </button>
-                <button 
-                  v-else
-                  @click="showAllTableColumns" 
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                  title="恢復顯示全部欄位"
-                >
-                  <span>👁️</span>
-                  <span>顯示全部</span>
-                </button>
-                <button 
-                  @click="toggleSectionVisibility('patientColDentalChart')" 
-                  class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                  :class="isSectionVisible('patientColDentalChart') 
-                    ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:border-blue-800 dark:text-blue-300' 
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'"
-                  :title="isSectionVisible('patientColDentalChart') ? '點擊隱藏列表中的「🦷 病歷表」按鈕' : '點擊顯示列表中的「🦷 病歷表」按鈕'"
-                >
-                  <span>🦷</span>
-                  <span>{{ isSectionVisible('patientColDentalChart') ? '隱藏病歷表' : '顯示病歷表' }}</span>
-                </button>
+
               </div>
               <div class="text-xs text-slate-500 font-bold">
                 共篩選出 <span class="font-black text-slate-900">{{ filteredPatients.length }}</span> 位個案
@@ -2566,7 +2538,7 @@
                   <tr>
                     <th class="py-3.5 px-4">病患姓名 / 病歷號</th>
                     <th v-if="isSectionVisible('patientColLeadStatus')" class="py-3.5 px-4">目前狀態</th>
-                    <th v-if="isSectionVisible('patientColCategory')" class="py-3.5 px-4">諮詢療程項目</th>
+                    <th v-if="isSectionVisible('patientColCategory')" class="py-3.5 px-4">療程項目與目前進度</th>
                     <th v-if="isSectionVisible('patientColHealthAlerts')" class="py-3.5 px-4">全身健康標籤 (個管風險)</th>
                     <th v-if="isSectionVisible('patientColDoctor')" class="py-3.5 px-4">主治醫師 / 個管師</th>
                     <th v-if="isSectionVisible('patientColContractAmount')" class="py-3.5 px-4">專案合約金額</th>
@@ -2607,8 +2579,8 @@
                       </div>
                     </td>
                     <td v-if="isSectionVisible('patientColCategory')" class="py-3.5 px-4 font-medium text-slate-800">
-                      <div class="font-bold">{{ p.consultCategory }}</div>
-                      <div class="text-[11px] text-slate-500 line-clamp-1">{{ p.chiefComplaint }}</div>
+                      <div class="font-bold text-slate-900">{{ p.consultCategory || '一般門診' }}</div>
+                      <div class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{{ p.pipelineStage || '尚未填寫進度' }}</div>
                     </td>
                     <td v-if="isSectionVisible('patientColHealthAlerts')" class="py-3.5 px-4">
                       <div class="flex flex-wrap gap-1 max-w-[220px]">
@@ -3826,16 +3798,19 @@
                   <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
                     療程：{{ app.category }} ｜ 當日看診項目：{{ getAppTreatmentItemsText(app) }}
                   </div>
-                  <!-- ⚡ 連動 特殊叮嚀 / 備忘記事 -->
-                  <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1 flex items-start gap-1">
+                  <!-- ⚡ 連動 特殊叮嚀 / 備忘記事 (可直接編輯修改) -->
+                  <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1.5 flex items-center gap-1.5 flex-wrap" @click.stop>
                     <span class="text-teal-800 dark:text-teal-300 font-bold flex-shrink-0">⚡ 特殊叮嚀：</span>
-                    <span class="font-medium text-slate-700 dark:text-slate-200 break-words">
-                      <template v-if="app.notes && selectedPatient?.specialNotes && app.notes !== selectedPatient.specialNotes">
-                        {{ app.notes }} <span class="text-slate-400 dark:text-slate-500">（備忘記事：{{ selectedPatient.specialNotes }}）</span>
-                      </template>
-                      <template v-else>
-                        {{ app.notes || selectedPatient?.specialNotes || '無' }}
-                      </template>
+                    <input 
+                      type="text" 
+                      v-model="app.notes" 
+                      @input="saveToStorage" 
+                      @blur="saveToStorage" 
+                      placeholder="點擊直接編輯特殊叮嚀..." 
+                      class="px-2 py-0.5 text-[11px] bg-white dark:bg-slate-800 border border-teal-200 dark:border-teal-700/60 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-400 outline-none text-slate-700 dark:text-slate-200 min-w-[140px] flex-1 max-w-sm font-medium"
+                    />
+                    <span v-if="selectedPatient?.specialNotes && app.notes !== selectedPatient.specialNotes" class="text-slate-400 dark:text-slate-500 text-[10px]">
+                      （備忘記事：{{ selectedPatient.specialNotes }}）
                     </span>
                   </div>
                   <div class="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
@@ -3951,7 +3926,7 @@
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
               </svg>
-              <span>🗑️ 刪除個案</span>
+              <span>刪除個案</span>
             </button>
           </div>
         </div>
@@ -6355,7 +6330,7 @@
           </div>
 
           <div>
-            <label class="block text-slate-700 font-bold mb-0.5">約診備忘提醒</label>
+            <label class="block text-slate-700 font-bold mb-0.5">⚡ 特殊叮嚀：</label>
             <input type="text" v-model="newAppointmentForm.notes" class="w-full p-1.5 border border-slate-200 rounded-lg focus:border-brand-500 outline-none text-xs" placeholder="例如：確認假牙是否已從技工所送回、告知術前禁食等..." />
           </div>
 
@@ -6404,7 +6379,7 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-700 font-bold mb-1">病患姓名 *</label>
-              <input type="text" v-model="newPatientForm.name" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" placeholder="例：陳大文" />
+              <input type="text" v-model="newPatientForm.name" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" />
             </div>
             <div>
               <label class="block text-slate-700 font-bold mb-1">病歷號 *</label>
@@ -6414,7 +6389,6 @@
                 @input="onNewPatientChartNoInput"
                 required 
                 class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-mono font-bold" 
-                placeholder="例：801010 或 19911010" 
               />
             </div>
           </div>
@@ -6439,7 +6413,6 @@
                 type="number" 
                 v-model.number="newPatientForm.age" 
                 class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-mono" 
-                placeholder="依病歷號自動帶入" 
               />
             </div>
           </div>
@@ -6448,11 +6421,11 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-700 font-bold mb-1">聯絡電話</label>
-              <input type="text" v-model="newPatientForm.phone" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" placeholder="09xx-xxx-xxx (選填)" />
+              <input type="text" v-model="newPatientForm.phone" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" />
             </div>
             <div>
               <label class="block text-slate-700 font-bold mb-1">LINE ID</label>
-              <input type="text" v-model="newPatientForm.lineId" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-mono" placeholder="選填" />
+              <input type="text" v-model="newPatientForm.lineId" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-mono" />
             </div>
           </div>
 
@@ -6460,7 +6433,8 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-700 font-bold mb-1">諮詢自費項目 *</label>
-              <select v-model="newPatientForm.consultCategory" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold">
+              <select v-model="newPatientForm.consultCategory" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold">
+                <option value="">(尚未選擇)</option>
                 <option value="植牙 (IMP)">植牙 (IMP)</option>
                 <option value="牙周 (SR)">牙周 (SR)</option>
                 <option value="根管 (TC)">根管 (TC)</option>
@@ -6475,7 +6449,8 @@
             </div>
             <div>
               <label class="block text-slate-700 font-bold mb-1">目前狀態 *</label>
-              <select v-model="newPatientForm.leadStatus" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold">
+              <select v-model="newPatientForm.leadStatus" required class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold">
+                <option value="">(尚未選擇)</option>
                 <option value="治療中">1. 治療中</option>
                 <option value="評估中">2. 評估中</option>
                 <option value="考慮中">3. 考慮中</option>
@@ -6500,16 +6475,14 @@
               <input 
                 type="text" 
                 v-model="newPatientForm.pipelineStage" 
-                list="pipelineStageOptions" 
                 class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" 
-                placeholder="自填個案階段，例：1. 初診諮詢" 
               />
             </div>
           </div>
 
           <div>
             <label class="block text-slate-700 font-bold mb-1">主責醫師順序 (跨專科)</label>
-            <input type="text" v-model="newPatientForm.leadDoctors" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" placeholder="例：TE, 欣 或 銘, TE" />
+            <input type="text" v-model="newPatientForm.leadDoctors" class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none font-bold" />
           </div>
 
           <!-- 藥物過敏史與全身性疾病 -->
@@ -6519,7 +6492,7 @@
                 <span class="flex items-center gap-1 text-red-700 font-bold">💊 藥物過敏史</span>
                 <span class="text-[10px] text-slate-400 font-normal">逗號隔開</span>
               </label>
-              <input type="text" v-model="newPatientForm.drugAllergiesInput" class="w-full p-2 border border-red-200 rounded-lg focus:border-red-500 outline-none text-xs text-red-800 font-bold" placeholder="例如：盤尼西林, 局部麻醉..." />
+              <input type="text" v-model="newPatientForm.drugAllergiesInput" class="w-full p-2 border border-red-200 rounded-lg focus:border-red-500 outline-none text-xs text-red-800 font-bold" />
             </div>
 
             <div>
@@ -6527,8 +6500,18 @@
                 <span class="flex items-center gap-1 text-amber-700 font-bold">⚠️ 全身性疾病風險標記</span>
                 <span class="text-[10px] text-slate-400 font-normal">逗號隔開</span>
               </label>
-              <input type="text" v-model="newPatientForm.systemicDiseasesInput" class="w-full p-2 border border-amber-200 rounded-lg focus:border-amber-500 outline-none text-xs text-amber-800 font-bold" placeholder="例如：骨質疏鬆用藥 (BMA), 高血壓..." />
+              <input type="text" v-model="newPatientForm.systemicDiseasesInput" class="w-full p-2 border border-amber-200 rounded-lg focus:border-amber-500 outline-none text-xs text-amber-800 font-bold" />
             </div>
+          </div>
+
+          <!-- ⚡ 特殊叮嚀 (連動個案備忘) -->
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">⚡ 特殊叮嚀：</label>
+            <input 
+              type="text" 
+              v-model="newPatientForm.specialNotes" 
+              class="w-full p-2 border border-slate-200 rounded-lg focus:border-brand-500 outline-none text-xs" 
+            />
           </div>
 
           <div class="pt-3 border-t border-slate-100 flex justify-end gap-2 flex-shrink-0">
@@ -7550,8 +7533,8 @@
                 <!-- 欄位 2: 諮詢療程項目 -->
                 <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
                   <div>
-                    <div class="text-xs font-black text-slate-800 dark:text-slate-200">🦷 諮詢療程項目</div>
-                    <div class="text-[11px] text-slate-400 mt-0.5">專科分類與主訴症狀摘要</div>
+                    <div class="text-xs font-black text-slate-800 dark:text-slate-200">🦷 療程項目與目前進度</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">連動治療項目與個案進度階段</div>
                   </div>
                   <button @click="toggleSectionVisibility('patientColCategory')" :class="['relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out', isSectionVisible('patientColCategory') ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700']">
                     <span :class="['pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out', isSectionVisible('patientColCategory') ? 'translate-x-4' : 'translate-x-0']"></span>
@@ -10678,19 +10661,20 @@
           name: '',
           chartNo: '',
           gender: '女',
-          age: 35,
+          age: null,
           phone: '',
           lineId: '',
-          leadStatus: '治療中',
-          pipelineStage: '1. 初診諮詢',
-          consultCategory: '植牙 (IMP)',
-          doctor: 'TE 醫師',
-          leadDoctors: 'TE',
+          leadStatus: '',
+          pipelineStage: '',
+          consultCategory: '',
+          doctor: '',
+          leadDoctors: '',
           caseManager: '螺絲小姐',
-          projectTotal: 80000,
+          projectTotal: 0,
           drugAllergiesInput: '',
           systemicDiseasesInput: '',
-          chiefComplaint: ''
+          chiefComplaint: '',
+          specialNotes: ''
         });
 
         const paymentForm = ref({
@@ -13091,17 +13075,16 @@
         };
 
         const openNewPatientModal = () => {
-          const defaultChart = 'C' + new Date().toISOString().slice(2, 10).replace(/-/g, '');
           newPatientForm.value = {
             name: '',
-            chartNo: defaultChart,
+            chartNo: '',
             gender: '女',
             age: null,
             phone: '',
             lineId: '',
-            leadStatus: '治療中',
-            pipelineStage: '1. 初診諮詢',
-            consultCategory: '植牙 (IMP)',
+            leadStatus: '',
+            pipelineStage: '',
+            consultCategory: '',
             doctor: '',
             leadDoctors: '',
             caseManager: '螺絲小姐',
@@ -13109,12 +13092,9 @@
             drugAllergiesInput: '',
             systemicDiseasesInput: '',
             medicalAlertsInput: '',
-            chiefComplaint: ''
+            chiefComplaint: '',
+            specialNotes: ''
           };
-          const autoAge = calculateAgeFromChartNo(defaultChart);
-          if (autoAge !== null && autoAge >= 0) {
-            newPatientForm.value.age = autoAge;
-          }
           showNewPatientModal.value = true;
         };
 
@@ -13136,26 +13116,33 @@
             leg.forEach(a => { if (!combinedAlerts.includes(a)) combinedAlerts.push(a); });
           }
 
+          const rawChartNo = (newPatientForm.value.chartNo || '').trim();
+          if (!rawChartNo) {
+            alert('請輸入病歷號！');
+            return;
+          }
+
           const newP = {
             id: 'p_' + Date.now(),
-            chartNo: newPatientForm.value.chartNo || ('C' + new Date().toISOString().slice(2, 10).replace(/-/g, '')),
+            chartNo: rawChartNo,
             name: rawName,
             gender: newPatientForm.value.gender || '女',
-            age: Number(newPatientForm.value.age) || 35,
+            age: Number(newPatientForm.value.age) || 0,
             phone: (newPatientForm.value.phone || '').trim(),
             lineId: (newPatientForm.value.lineId || '').trim(),
-            leadStatus: newPatientForm.value.leadStatus || '治療中',
-            consultCategory: newPatientForm.value.consultCategory,
+            leadStatus: newPatientForm.value.leadStatus || '尚未選擇',
+            consultCategory: newPatientForm.value.consultCategory || '尚未選擇',
             doctor: newPatientForm.value.doctor || '尚未指派',
             leadDoctors: newPatientForm.value.leadDoctors || (newPatientForm.value.doctor ? newPatientForm.value.doctor.replace(' 醫師', '') : ''),
             caseManager: newPatientForm.value.caseManager || '螺絲小姐',
             projectTotal: Number(newPatientForm.value.projectTotal) || 0,
             paidAmount: 0,
-            pipelineStage: newPatientForm.value.pipelineStage || '1. 初診諮詢',
+            pipelineStage: (newPatientForm.value.pipelineStage || '').trim(),
+            specialNotes: (newPatientForm.value.specialNotes || '').trim(),
             drugAllergies: parsedDrug,
             systemicDiseases: parsedSystemic,
             medicalAlerts: combinedAlerts,
-            chiefComplaint: newPatientForm.value.chiefComplaint,
+            chiefComplaint: newPatientForm.value.chiefComplaint || '',
             consultNotes: '螺絲小姐初診建立完成。',
             paymentHistory: []
           };
@@ -13613,6 +13600,8 @@
             } else if (testMode === 'appointment_new') {
               openNewAppointmentModal();
               appointmentPatientMode.value = 'new';
+            } else if (testMode === 'new_patient') {
+              openNewPatientModal();
             } else if (testMode === 'patient_view') {
               if (patients.value.length > 0) {
                 selectedPatient.value = patients.value[0];
