@@ -1347,7 +1347,7 @@
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            <span>+ 新增個案資料</span>
+            <span>新增個案資料</span>
           </button>
         </div>
       </header>
@@ -3660,7 +3660,7 @@
                   <option v-for="doc in clinicDoctors" :key="doc.id" :value="doc.name">{{ doc.fullTitle }}</option>
                 </select>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <label class="block text-slate-700 font-bold mb-1">主責團隊順序</label>
                 <input 
                   type="text" 
@@ -3669,18 +3669,10 @@
                   placeholder="例：TE, 銘, 欣" 
                 />
               </div>
-              <div>
-                <label class="block text-slate-700 font-bold mb-1">合約總額 (NTD)</label>
-                <input 
-                  type="number" 
-                  v-model.number="editPatientForm.projectTotal" 
-                  class="w-full p-2 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-bold text-slate-800" 
-                />
-              </div>
             </div>
 
             <div>
-              <label class="block text-slate-700 font-bold mb-1">特殊叮嚀 / 目前進度備忘</label>
+              <label class="block text-slate-700 font-bold mb-1">特殊叮嚀</label>
               <input 
                 type="text" 
                 v-model="editPatientForm.specialNotes" 
@@ -3792,7 +3784,7 @@
               <div><span class="text-slate-500 font-bold">主責醫師順序：</span><span class="font-bold text-slate-900">{{ selectedPatient.leadDoctors || selectedPatient.doctor }}</span></div>
             </div>
             <div v-if="selectedPatient.specialNotes" class="mt-2 pt-2 border-t border-teal-200/60 text-slate-800">
-              <span class="text-teal-900 font-bold">⚡ 特殊叮嚀 / 目前進度：</span>
+              <span class="text-teal-900 font-bold">⚡ 備忘記事：</span>
               <span class="font-medium text-slate-700">{{ selectedPatient.specialNotes }}</span>
             </div>
           </div>
@@ -3834,12 +3826,12 @@
                   <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
                     療程：{{ app.category }} ｜ 當日看診項目：{{ getAppTreatmentItemsText(app) }}
                   </div>
-                  <!-- ⚡ 連動 特殊叮嚀 / 目前進度備忘 -->
+                  <!-- ⚡ 連動 特殊叮嚀 / 備忘記事 -->
                   <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1 flex items-start gap-1">
-                    <span class="text-teal-800 dark:text-teal-300 font-bold flex-shrink-0">⚡ 特殊叮嚀 / 目前進度備忘：</span>
+                    <span class="text-teal-800 dark:text-teal-300 font-bold flex-shrink-0">⚡ 特殊叮嚀：</span>
                     <span class="font-medium text-slate-700 dark:text-slate-200 break-words">
                       <template v-if="app.notes && selectedPatient?.specialNotes && app.notes !== selectedPatient.specialNotes">
-                        {{ app.notes }} <span class="text-slate-400 dark:text-slate-500">（個案進度：{{ selectedPatient.specialNotes }}）</span>
+                        {{ app.notes }} <span class="text-slate-400 dark:text-slate-500">（備忘記事：{{ selectedPatient.specialNotes }}）</span>
                       </template>
                       <template v-else>
                         {{ app.notes || selectedPatient?.specialNotes || '無' }}
@@ -3926,15 +3918,22 @@
             </div>
           </div>
 
-          <!-- 個管諮詢心理備忘 (可於後台設定關閉) -->
+          <!-- 病人主訴/其他注意事項 (螺絲小姐個案管理專用) -->
           <div v-if="isSectionVisible('drawerConsultNotes')" class="border-t border-slate-200 pt-4">
-            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">個管諮詢心理備忘 (螺絲小姐個管專用)</h4>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>📝</span>
+                <span>病人主訴/其他注意事項(螺絲小姐個案管理專用)</span>
+              </h4>
+              <span class="text-[10px] text-slate-400 font-medium">可編輯修改小備註</span>
+            </div>
             <textarea 
               v-model="selectedPatient.consultNotes" 
+              @input="onPatientConsultNotesChange"
               @blur="saveToStorage"
-              placeholder="記錄患者的顧慮（如怕痛、需與家人商量預算、出國時間等）..."
+              placeholder="可於此輸入編輯病人主訴、期待或個管注意事項小備註..."
               rows="3" 
-              class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-brand-500 outline-none"
+              class="w-full text-xs p-3 bg-slate-50 hover:bg-white border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-400 rounded-xl outline-none text-slate-800 leading-relaxed transition-all"
             ></textarea>
           </div>
 
@@ -7746,7 +7745,7 @@
                   <div>
                     <div class="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1">
                       <span>🧠</span>
-                      <span>個管諮詢心理備忘 (螺絲小姐專用)</span>
+                      <span>病人主訴/其他注意事項 (螺絲小姐個管專用)</span>
                     </div>
                     <div class="text-[11px] text-slate-400 mt-0.5">記錄患者預算、心理顧慮與特殊叮嚀文字區</div>
                   </div>
@@ -11298,6 +11297,16 @@
           }
         };
 
+        const onPatientConsultNotesChange = () => {
+          if (selectedPatient.value) {
+            const pIndex = patients.value.findIndex(p => p.id === selectedPatient.value.id);
+            if (pIndex !== -1) {
+              patients.value[pIndex].consultNotes = selectedPatient.value.consultNotes;
+            }
+            saveToStorage();
+          }
+        };
+
         const generateLineTemplate = (rem, templateKey = 't3Reminder') => {
           const tpl = (systemSettings.value.lineTemplates && systemSettings.value.lineTemplates[templateKey]) 
             || DEFAULT_LINE_TEMPLATES[templateKey] 
@@ -13798,6 +13807,7 @@
           getAppointmentStatusBadgeClass,
           onEditPatientChartNoInput,
           onNewPatientChartNoInput,
+          onPatientConsultNotesChange,
           showTodayFollowupBanner,
           showTodayRescheduleBanner,
           showTodayFollowupModal,
