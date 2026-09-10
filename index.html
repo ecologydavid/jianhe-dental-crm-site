@@ -995,11 +995,6 @@
           <h2 class="text-base sm:text-lg font-black text-slate-900 truncate">{{ currentTabTitle }}</h2>
           <button @click="openSupabaseSettings" class="text-[11px] font-bold rounded-lg px-2 py-1 border" :class="supabaseSyncStatus === 'connected' ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-amber-900 bg-amber-50 border-amber-300'" :title="supabaseSyncMsg">
             {{ supabaseSyncStatus === 'connected' ? '☁ 已同步雲端' : supabaseSyncStatus === 'connecting' ? '↻ 待同步' : '⚠ 僅存本機／同步未完成' }}
-          </button>
-          <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#ecfdf5] border border-emerald-200 text-emerald-900 text-xs rounded-full font-bold flex-shrink-0 shadow-2xs">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            或心設計有限公司 · 個案管理體系統
-          </span>
           <!-- 🔒 螢幕上鎖按鍵 (Navbar 最上方) -->
           <button 
             @click="lockScreen"
@@ -1326,25 +1321,25 @@
             </div>
           </div>
 
-          <!-- 快速安排約診按鈕 -->
+          <!-- 快速安排約診按鈕 (同寬排版 w-32) -->
           <button 
             @click="openNewAppointmentModal" 
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
+            class="inline-flex items-center justify-center gap-1.5 w-32 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
             title="安排病患約診 (支援登記新病患自動入庫)"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
             <span>安排約診</span>
           </button>
 
-          <!-- 新增個案資料按鈕 (單獨新增個案資料，無需強制綁定門診約診與看診醫師) -->
+          <!-- 新增個案資料按鈕 (同寬排版 w-32) -->
           <button 
             @click="openNewPatientModal" 
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
+            class="inline-flex items-center justify-center gap-1.5 w-32 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
             title="單獨新增個案資料"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
             <span>新增個案資料</span>
@@ -2370,7 +2365,12 @@
                       </span>
                     </div>
                     
-                    <span v-if="cell.appointments.length > 0" class="text-[10.5px] text-slate-500 font-extrabold pr-0.5 flex items-center gap-1">
+                    <span 
+                      v-if="cell.appointments.length > 0" 
+                      @click.stop="openDayAppointmentsModal(cell)"
+                      class="text-[10.5px] text-slate-500 hover:text-brand-700 font-extrabold pr-0.5 flex items-center gap-1 cursor-pointer transition-colors"
+                      :title="`點擊檢視 ${cell.dateKey} 全部 ${cell.appointments.length} 筆約診清單`"
+                    >
                       <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
                       <span>{{ cell.appointments.length }} 約</span>
                     </span>
@@ -2454,13 +2454,50 @@
                       <span class="text-xs font-bold">+ 點擊安排約診</span>
                     </div>
 
+                    <!-- 當有隱藏約診時：提供「展開顯示」與「彈窗詳情」按鈕 -->
                     <div 
                       v-if="getHiddenAppointmentsCount(cell) > 0" 
-                      @click.stop="openNewAppointmentModalWithDate(cell.dateKey)"
-                      class="text-[10px] text-slate-600 hover:text-brand-700 hover:bg-brand-50 font-extrabold px-1 text-center bg-slate-100/90 border border-slate-200 rounded py-0.5 cursor-pointer transition-colors"
-                      title="點擊為此日排入約診"
+                      class="flex items-center gap-1 mt-1 pt-0.5"
                     >
-                      + 還有 {{ getHiddenAppointmentsCount(cell) }} 筆約診...
+                      <button 
+                        type="button"
+                        @click.stop="toggleCellExpand(cell.dateKey)"
+                        class="flex-1 text-[10px] text-brand-700 hover:text-brand-900 hover:bg-brand-100/90 font-black px-1.5 py-0.5 text-center bg-brand-50/90 border border-brand-200/90 rounded cursor-pointer transition-all flex items-center justify-center gap-0.5 shadow-2xs leading-tight truncate"
+                        :title="`點擊於此格內展開顯示全部 ${cell.appointments.length} 筆約診`"
+                      >
+                        <span>▼ 展開還有 {{ getHiddenAppointmentsCount(cell) }} 筆</span>
+                      </button>
+                      <button 
+                        type="button"
+                        @click.stop="openDayAppointmentsModal(cell)"
+                        class="text-[10px] text-slate-700 hover:text-slate-900 hover:bg-slate-200/80 font-black px-1.5 py-0.5 text-center bg-slate-100 border border-slate-200 rounded cursor-pointer transition-all flex items-center justify-center shadow-2xs leading-tight flex-shrink-0"
+                        title="開啟當日完整約診清單彈窗（支援切換一週視圖與個案詳情）"
+                      >
+                        <span>📋 詳情</span>
+                      </button>
+                    </div>
+
+                    <!-- 當已於格內就地展開時：提供「收合」與「彈窗」按鈕 -->
+                    <div 
+                      v-if="isCellExpanded(cell.dateKey) && calendarViewSpan !== 'week'" 
+                      class="flex items-center gap-1 mt-1 pt-1 border-t border-dashed border-slate-200"
+                    >
+                      <button 
+                        type="button"
+                        @click.stop="toggleCellExpand(cell.dateKey)"
+                        class="flex-1 text-[10px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-black px-1.5 py-0.5 text-center bg-slate-50 border border-slate-200 rounded cursor-pointer transition-all flex items-center justify-center gap-0.5 shadow-2xs leading-tight truncate"
+                        title="收合此日約診"
+                      >
+                        <span>▲ 收合 (共 {{ cell.appointments.length }} 筆)</span>
+                      </button>
+                      <button 
+                        type="button"
+                        @click.stop="openDayAppointmentsModal(cell)"
+                        class="text-[10px] text-brand-700 hover:text-brand-900 hover:bg-brand-100/80 font-black px-1.5 py-0.5 text-center bg-brand-50 border border-brand-200 rounded cursor-pointer transition-all flex items-center justify-center shadow-2xs leading-tight flex-shrink-0"
+                        title="開啟當日完整約診清單彈窗"
+                      >
+                        <span>📋 彈窗</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -5759,6 +5796,174 @@
     </div>
 
     <!-- ============================================== -->
+    <!-- MODAL: 當日約診排程清單展開檢視 (Day Appointments Modal) -->
+    <!-- ============================================== -->
+    <div v-if="showDayAppointmentsModal && dayAppointmentsModalCell" v-cloak class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+        <!-- 彈窗頂部 Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 flex-shrink-0">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 text-white flex items-center justify-center text-lg shadow-md shadow-brand-500/20 flex-shrink-0 font-bold">
+              <span>📅</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="font-black text-slate-900 dark:text-white text-base sm:text-lg">
+                  {{ dayAppointmentsModalCell.dateKey }} ({{ dayAppointmentsModalCell.dayName }}) 當日約診一覽
+                </h3>
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-brand-100 dark:bg-brand-950 text-brand-900 dark:text-brand-300 font-extrabold border border-brand-300 dark:border-brand-700 shadow-2xs">
+                  共 {{ (dayAppointmentsModalCell.appointments || []).length }} 筆約診
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                點擊約診卡片可直接檢視個案檔案；點擊狀態標籤可快速切換報到狀態
+              </p>
+            </div>
+          </div>
+          <button 
+            type="button"
+            @click="closeDayAppointmentsModal" 
+            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0 cursor-pointer text-base"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- 頂部快速切換視圖與狀態統計 -->
+        <div class="py-2.5 px-3 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+          <div class="flex items-center gap-2 text-xs font-bold flex-wrap">
+            <span class="text-slate-500 dark:text-slate-400">狀態概況：</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+              已報到 {{ (dayAppointmentsModalCell.appointments || []).filter(a => a.status === '已報到').length }}
+            </span>
+            <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
+              已預約 {{ (dayAppointmentsModalCell.appointments || []).filter(a => !a.status || a.status === '已預約').length }}
+            </span>
+            <span v-if="(dayAppointmentsModalCell.appointments || []).filter(a => a.status === '未報到' || a.status === '未到').length > 0" class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300">
+              未報到 {{ (dayAppointmentsModalCell.appointments || []).filter(a => a.status === '未報到' || a.status === '未到').length }}
+            </span>
+          </div>
+
+          <!-- 一鍵切換至一週長條視圖 -->
+          <button 
+            type="button"
+            @click="switchToWeekViewForDate(dayAppointmentsModalCell.dateKey)"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-brand-700 dark:text-brand-300 hover:text-brand-900 border border-brand-200 dark:border-brand-700 rounded-lg text-xs font-bold shadow-2xs transition-all cursor-pointer"
+            title="以一週垂直長條模式檢視該週完整時間軸"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+            <span>切換至一週長條視圖 ↗</span>
+          </button>
+        </div>
+
+        <!-- 約診卡片清單 (滾動區) -->
+        <div class="flex-1 overflow-y-auto p-1 space-y-2.5 my-2">
+          <div 
+            v-for="app in (dayAppointmentsModalCell.appointments || [])" 
+            :key="app.id"
+            @click="openAppointmentDetail(app); closeDayAppointmentsModal();"
+            :class="[
+              'p-3 rounded-xl border transition-all cursor-pointer select-none group',
+              (app.status === '未報到' || app.status === '未到') 
+                ? 'border-2 border-dashed border-rose-500 bg-rose-50/70 hover:bg-rose-100/60 dark:bg-rose-950/40 shadow-xs' 
+                : 'bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-700/60 border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:shadow-md'
+            ]"
+            :title="`點擊開啟 ${app.patientName} 個案完整檔案`"
+          >
+            <!-- 第一列：看診完整時間、病患姓名、病歷號、醫師、診療椅與狀態標籤 -->
+            <div class="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-mono font-black text-sm text-slate-800 dark:text-slate-100 tracking-tight bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600">
+                  🕒 {{ getAppointmentTimeRange(app) }}
+                </span>
+                <span class="font-black text-base text-slate-900 dark:text-white group-hover:text-brand-700 dark:group-hover:text-brand-400 transition-colors">
+                  {{ app.patientName }}
+                </span>
+                <span v-if="app.chartNo" class="font-mono text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                  {{ app.chartNo }}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span v-if="app.doctor" class="font-extrabold text-xs text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-700 px-2 py-0.5 rounded-md shadow-2xs">
+                  {{ formatDoctorDisplay(app.doctor) }}
+                </span>
+                <span v-if="app.chair" class="font-bold text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                  💺 {{ app.chair }}
+                </span>
+                <span 
+                  @click.stop="toggleAppointmentStatus(app)"
+                  class="px-2 py-0.5 rounded text-xs font-black shrink-0 cursor-pointer shadow-2xs border transition-all"
+                  :class="getAppointmentStatusBadgeClass(app.status)"
+                  :title="`點擊切換狀態（目前：${app.status || '已預約'}，點擊依序切換：已預約 ➔ 已報到 ➔ 未報到）`"
+                >
+                  {{ app.status || '已預約' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 第二列：看診治療項目與諮詢類別 -->
+            <div class="mt-2 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 gap-2">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="px-1.5 py-0.2 rounded font-bold bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800 shrink-0 text-[11px]">
+                  {{ app.category || '自費諮詢' }}
+                </span>
+                <span class="font-semibold text-slate-700 dark:text-slate-200 truncate">
+                  🦷 治療項目：{{ getAppTreatmentItemsText(app) }}
+                </span>
+              </div>
+              <span class="text-xs font-bold text-brand-600 dark:text-brand-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0">
+                查看個案 →
+              </span>
+            </div>
+
+            <!-- 第三列：特殊叮嚀／備忘（若有） -->
+            <div v-if="app.notes" class="mt-2 text-xs bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-700/80 rounded-lg px-2.5 py-1.5 text-amber-900 dark:text-amber-200 font-medium">
+              <span class="font-bold text-amber-800 dark:text-amber-300">⚡ 特殊叮嚀：</span>
+              <span>{{ app.notes }}</span>
+            </div>
+          </div>
+
+          <!-- 空狀態 -->
+          <div v-if="(dayAppointmentsModalCell.appointments || []).length === 0" class="py-12 text-center bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 space-y-2">
+            <div class="text-3xl">📅</div>
+            <div class="text-sm font-bold text-slate-700 dark:text-slate-200">此日尚無任何排定約診</div>
+            <div class="text-xs text-slate-400">您可以點擊下方按鈕為此日安排新的門診約診</div>
+          </div>
+        </div>
+
+        <!-- 彈窗底部 Footer -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+          <button 
+            type="button" 
+            @click="switchToWeekViewForDate(dayAppointmentsModalCell.dateKey)" 
+            class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>📅</span>
+            <span>切換至一週長條詳情</span>
+          </button>
+          
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              @click="openNewAppointmentModalWithDate(dayAppointmentsModalCell.dateKey); closeDayAppointmentsModal();" 
+              class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+            >
+              <span>+ 安排此日約診</span>
+            </button>
+            <button 
+              type="button" 
+              @click="closeDayAppointmentsModal" 
+              class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+            >
+              關閉
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
     <!-- MODAL 2: 安排病患約診排程 (手動輸入與病患庫【完美連動整合】) -->
     <!-- ============================================== -->
     <!-- 全域個案進度階段智能建議清單 (支援自填與快速點選) -->
@@ -8836,6 +9041,9 @@
         const showTodayRescheduleBanner = ref(true);
         const showTodayFollowupModal = ref(false);
         const showTodayRescheduleModal = ref(false);
+        const showDayAppointmentsModal = ref(false);
+        const dayAppointmentsModalCell = ref(null);
+        const expandedCellDates = ref(new Set());
         const todayFollowupModalFilter = ref('pending');
         const todayRescheduleModalFilter = ref('pending');
         const showToast = ref(false);
@@ -11504,9 +11712,46 @@
           return cells;
         });
 
+        const isCellExpanded = (dateKey) => {
+          return expandedCellDates.value.has(dateKey);
+        };
+
+        const toggleCellExpand = (dateKey) => {
+          const next = new Set(expandedCellDates.value);
+          if (next.has(dateKey)) {
+            next.delete(dateKey);
+          } else {
+            next.add(dateKey);
+          }
+          expandedCellDates.value = next;
+        };
+
+        const openDayAppointmentsModal = (cell) => {
+          if (!cell) return;
+          const latestApps = getAppointmentsForDate(cell.dateKey);
+          dayAppointmentsModalCell.value = {
+            ...cell,
+            appointments: latestApps
+          };
+          showDayAppointmentsModal.value = true;
+        };
+
+        const closeDayAppointmentsModal = () => {
+          showDayAppointmentsModal.value = false;
+          dayAppointmentsModalCell.value = null;
+        };
+
+        const switchToWeekViewForDate = (dateKey) => {
+          calendarViewSpan.value = 'week';
+          calendarAnchorDate.value = dateKey;
+          selectedCalendarDate.value = dateKey;
+          closeDayAppointmentsModal();
+        };
+
         const getVisibleAppointments = (cell) => {
           if (!cell || !cell.appointments) return [];
           if (calendarViewSpan.value === 'week') return cell.appointments;
+          if (isCellExpanded(cell.dateKey)) return cell.appointments;
           if (calendarViewSpan.value === 'twoWeeks') return cell.appointments.slice(0, 6);
           return cell.appointments.slice(0, 3);
         };
@@ -11514,6 +11759,7 @@
         const getHiddenAppointmentsCount = (cell) => {
           if (!cell || !cell.appointments) return 0;
           if (calendarViewSpan.value === 'week') return 0;
+          if (isCellExpanded(cell.dateKey)) return 0;
           if (calendarViewSpan.value === 'twoWeeks') return Math.max(0, cell.appointments.length - 6);
           return Math.max(0, cell.appointments.length - 3);
         };
@@ -13876,6 +14122,14 @@
           changePeriod,
           getVisibleAppointments,
           getHiddenAppointmentsCount,
+          showDayAppointmentsModal,
+          dayAppointmentsModalCell,
+          expandedCellDates,
+          isCellExpanded,
+          toggleCellExpand,
+          openDayAppointmentsModal,
+          closeDayAppointmentsModal,
+          switchToWeekViewForDate,
           selectedCalendarDate,
           calendarViewMode,
           calendarFilterDoctor,
