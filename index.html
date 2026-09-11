@@ -5510,8 +5510,8 @@
                   <span class="px-2 py-0.5 rounded text-xs font-black border inline-flex items-center gap-1 bg-teal-50 text-teal-800 border-teal-200">
                     {{ rem.status || '已報到' }}
                   </span>
-                  <span v-if="rem.hasNextApp || rem.followupDone" class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    ✅ 已安排下次約診
+                  <span v-if="rem.followupDone" class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    ✅ {{ rem.hasNextApp ? '已安排下次約診' : '已標記處理完成' }}
                   </span>
                   <span v-else class="px-2 py-0.5 rounded text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
                     ⏳ 待約下次看診時間
@@ -6488,17 +6488,17 @@
             </div>
           </div>
 
-          <!-- 核心：時間重疊衝突警告卡片（只有出現重複才有警告，其餘讓使用者自己輸入） -->
+          <!-- 核心：時間重疊衝突警告卡片（保留紅色框框提示，但允許使用者直接建單預約） -->
           <div v-if="patientConflictingAppointment" class="p-3 bg-rose-50 border-2 border-rose-400 rounded-xl space-y-1.5 text-xs shadow-sm">
             <div class="flex items-center justify-between text-rose-800 font-extrabold text-sm">
               <span class="flex items-center gap-1.5">
                 <span class="text-base">🚨</span>
-                <span v-if="patientConflictingAppointment.isExactDup">重複約診警告：此時段已有相同預約！</span>
-                <span v-else-if="patientConflictingAppointment.isSamePatient">時段衝突錯誤：同一位病患時間重疊！</span>
-                <span v-else>醫師時段衝突：【{{ patientConflictingAppointment.doctor }}】此時段已有約診！</span>
+                <span v-if="patientConflictingAppointment.isExactDup">重複約診提醒：此時段已有相同預約！</span>
+                <span v-else-if="patientConflictingAppointment.isSamePatient">時段衝突提醒：同一位病患時間重疊！</span>
+                <span v-else>醫師時段衝突提醒：【{{ patientConflictingAppointment.doctor }}】此時段已有約診！</span>
               </span>
               <span class="text-[10px] px-2 py-0.5 bg-rose-200 text-rose-900 rounded font-black">
-                {{ patientConflictingAppointment.isExactDup ? '重複約診' : '時間重疊' }}
+                {{ patientConflictingAppointment.isExactDup ? '重複約診' : '時段重疊提醒' }}
               </span>
             </div>
 
@@ -6509,24 +6509,24 @@
                 （{{ patientConflictingAppointment.patientName }} ｜ {{ patientConflictingAppointment.category }}，{{ patientConflictingAppointment.duration }}分鐘）
               </div>
               <div class="text-rose-600 font-bold">
-                您輸入的時間 <span class="font-mono bg-rose-100 px-1.5 py-0.5 rounded font-black">{{ newAppointmentForm.time }} ~ {{ patientConflictingAppointment.proposedEndTime }}</span> 與此時段<strong>發生重疊</strong>，無法排程！
+                您輸入的時間 <span class="font-mono bg-rose-100 px-1.5 py-0.5 rounded font-black">{{ newAppointmentForm.time }} ~ {{ patientConflictingAppointment.proposedEndTime }}</span> 與此時段<strong>發生重疊</strong>（系統已為您警示，如確認無誤仍可直接建單排程）。
               </div>
             </div>
 
             <div class="flex items-center justify-between flex-wrap gap-2 text-rose-900 font-bold pt-0.5">
-              <span>💡 請調整時間（只能往前或往後，不可重疊）：</span>
+              <span>💡 建議調整時間（或直接點擊右下方按鈕排程建單）：</span>
               <div class="flex items-center gap-2">
                 <button 
                   type="button" 
                   @click="newAppointmentForm.time = patientConflictingAppointment.suggestBeforeTime" 
-                  class="px-2 py-1 bg-white hover:bg-rose-100 border border-rose-300 rounded text-rose-700 font-bold transition-colors"
+                  class="px-2 py-1 bg-white hover:bg-rose-100 border border-rose-300 rounded text-rose-700 font-bold transition-colors cursor-pointer"
                 >
                   ⏪ 往前排至 {{ patientConflictingAppointment.suggestBeforeTime }}
                 </button>
                 <button 
                   type="button" 
                   @click="newAppointmentForm.time = patientConflictingAppointment.suggestAfterTime" 
-                  class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded font-bold shadow-xs transition-colors"
+                  class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded font-bold shadow-xs transition-colors cursor-pointer"
                 >
                   ⏩ 往後排至 {{ patientConflictingAppointment.suggestAfterTime }}
                 </button>
@@ -6554,20 +6554,17 @@
               <button 
                 type="button" 
                 @click="createAppointment(true)" 
-                :disabled="!!patientConflictingAppointment"
-                :class="patientConflictingAppointment ? 'opacity-40 cursor-not-allowed bg-slate-400 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'"
-                class="px-3 py-1.5 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                class="px-3 py-1.5 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white"
                 title="儲存此筆約診，並留在視窗直接為此病患預約同日下一位看診醫師"
               >
                 <span>+ 儲存並續排下一位醫師</span>
               </button>
               <button 
                 type="submit" 
-                :disabled="!!patientConflictingAppointment"
-                :class="patientConflictingAppointment ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'"
-                class="px-3.5 py-1.5 rounded-lg font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                :class="patientConflictingAppointment ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'"
+                class="px-3.5 py-1.5 rounded-lg font-bold text-xs shadow-xs transition-colors cursor-pointer active:scale-95"
               >
-                {{ patientConflictingAppointment ? '❌ 時段重疊錯誤' : (appointmentPatientMode === 'new' ? '同步建立病患並排程' : '確認預約排程') }}
+                {{ patientConflictingAppointment ? '⚠️ 確認預約排程 (時段重疊)' : (appointmentPatientMode === 'new' ? '同步建立病患並排程' : '確認預約排程') }}
               </button>
             </div>
           </div>
@@ -11341,6 +11338,11 @@
               const hasNextApp = !!futureApp;
               const nextAppInfo = futureApp ? `${futureApp.date} ${futureApp.time} (${futureApp.doctor || '醫師'})` : '';
 
+              // 若有明確手動標記過 followupDone（設為待處理或已完成）則以手動優先；否則預設依據是否已排下次約診判定
+              const isFollowupDone = (app.followupDone !== undefined && app.followupDone !== null)
+                ? Boolean(app.followupDone)
+                : hasNextApp;
+
               return {
                 ...app,
                 patient,
@@ -11351,7 +11353,7 @@
                 patientLineId: patient.lineId || app.lineId || '',
                 hasNextApp,
                 nextAppInfo,
-                followupDone: !!(app.followupDone || hasNextApp)
+                followupDone: isFollowupDone
               };
             })
             .sort((a, b) => {
@@ -11476,8 +11478,11 @@
         const toggleTodayFollowupDone = (rem) => {
           const targetApp = appointments.value.find(a => a.id === rem.id);
           if (targetApp) {
-            targetApp.followupDone = !targetApp.followupDone;
+            targetApp.followupDone = !rem.followupDone;
             saveToStorage();
+            copyToastMessage.value = targetApp.followupDone ? '✅ 已標記為處理完成' : '↩️ 已重設為待處理';
+            showToast.value = true;
+            setTimeout(() => { showToast.value = false; }, 2000);
           }
         };
 
@@ -12463,20 +12468,9 @@
             }
           }
 
-          // 檢查重疊錯誤狀態 (同一病患同日時間重疊為錯誤狀態，嚴禁儲存)
-          if (patientConflictingAppointment.value) {
-            const conflict = patientConflictingAppointment.value;
-            let conflictMsg = '';
-            if (conflict.isExactDup) {
-              conflictMsg = `🚨 重複約診警告：此時段已有相同的預約排程！\n\n【${conflict.doctor}】於 ${conflict.time} 已安排【${conflict.patientName}】（${conflict.category}）。\n無法重複預約相同時段！`;
-            } else if (conflict.isSamePatient) {
-              conflictMsg = `🚨 時段重疊錯誤：同一位病患無法在重疊時間看診！\n\n病患已安排約診：\n【${conflict.doctor}】${conflict.exStartTime} - ${conflict.exEndTime}（${conflict.category}）\n\n您當前輸入的時間為 ${newAppointmentForm.value.time}，發生時間重疊！\n請將時間往前調整至 ${conflict.suggestBeforeTime} 之前，或往後調整至 ${conflict.suggestAfterTime} 之後。`;
-            } else {
-              conflictMsg = `🚨 醫師時段重疊錯誤：【${conflict.doctor}】在此時段已安排其他約診！\n\n已有約診：\n【${conflict.patientName}】${conflict.exStartTime} - ${conflict.exEndTime}（${conflict.category}）\n\n您當前輸入的時間為 ${newAppointmentForm.value.time}，請將時間調整至 ${conflict.suggestBeforeTime} 之前或 ${conflict.suggestAfterTime} 之後。`;
-            }
-            alert(conflictMsg);
-            return;
-          }
+          // 檢查重疊警示狀態（時段發生衝突時提示，但依使用者需求允許直接建單預約）
+          const conflict = patientConflictingAppointment.value;
+          const hasConflict = Boolean(conflict);
 
           const selectedCats = [...(newAppointmentForm.value.treatmentCategories || [])];
           const selectedItems = [...(newAppointmentForm.value.treatmentItems || [])];
@@ -12510,6 +12504,12 @@
           appointments.value.push(newApp);
           saveToStorage();
 
+          copyToastMessage.value = hasConflict
+            ? `⚠️ 約診已成功排入！（此時段有重疊約診，請留意看診排程）`
+            : `✅ 約診排程已成功建立！`;
+          showToast.value = true;
+          setTimeout(() => { showToast.value = false; }, 2500);
+
           if (keepOpenForNextDoctor) {
             // 自動計算接續時段，保持彈窗開啟方便排同日下一位醫師
             const [hh, mm] = newApp.time.split(':').map(Number);
@@ -12538,10 +12538,12 @@
               newAppointmentForm.value.chair = getDefaultChairForDoctor(otherDoc.name);
             }
 
-            alert(`✅ 約診已成功排入行事曆！\n【${newApp.patientName}】於 ${newApp.date} ${newApp.time} 由 ${newApp.doctor} 看診。\n\n👉 已為您保留病患資料，並已自動推移時段至 ${nextH}:${nextM}，看診項目已初始化重填，請接續選擇下一位醫師及診療項目。`);
+            const conflictNote = hasConflict ? `\n⚠️ 提醒：此約診時段與同日既有約診發生重疊，已依您的確認完成排程。` : '';
+            alert(`✅ 約診已成功排入行事曆！\n【${newApp.patientName}】於 ${newApp.date} ${newApp.time} 由 ${newApp.doctor} 看診。${conflictNote}\n\n👉 已為您保留病患資料，並已自動推移時段至 ${nextH}:${nextM}，看診項目已初始化重填，請接續選擇下一位醫師及診療項目。`);
           } else {
             showNewAppointmentModal.value = false;
-            alert(`✅ 已成功為【${newApp.patientName}】建立約診排程（${newApp.date} ${newApp.time} 由 ${newApp.doctor} 看診），已獨立排入行事曆！`);
+            const conflictNote = hasConflict ? `\n⚠️ 提醒：此約診時段與同日既有約診發生重疊，已依您的確認完成排程。` : '';
+            alert(`✅ 已成功為【${newApp.patientName}】建立約診排程（${newApp.date} ${newApp.time} 由 ${newApp.doctor} 看診），已獨立排入行事曆！${conflictNote}`);
           }
         };
 

@@ -7,8 +7,8 @@ body:has(.keeper-lock-screen) {
   position: fixed; inset: 0; z-index: 99999; isolation: isolate;
   overflow: hidden; width: 100vw; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; color: #fff5e7;
   background: rgba(15, 19, 24, .96); backdrop-filter: blur(22px);
-  /* 🐱 趣味逗貓棒鼠標游標 (Cat Teaser Wand Cursor) */
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'><g transform='rotate(-15 18 18)'><path d='M32 34 L14 16' stroke='%23f59e0b' stroke-width='2.8' stroke-linecap='round'/><path d='M14 16 L9 11' stroke='%23fde68a' stroke-width='1.5'/><circle cx='9' cy='11' r='2' fill='%23fbbf24'/><path d='M9 11 Q5 4 1 6 Q3 10 9 11' fill='%23f43f5e'/><path d='M9 11 Q3 9 1 14 Q6 14 9 11' fill='%2306b6d4'/><path d='M9 11 Q7 15 4 19 Q9 16 9 11' fill='%23a855f7'/><circle cx='9' cy='11' r='0.8' fill='%23fff'/></g></svg>") 3 3, auto;
+  /* 🐱 趣味逗貓棒鼠標游標 (Cat Teaser Wand Cursor - 尺寸加大升級版，更契合大橘貓身型) */
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g transform='rotate(-12 32 32)'><path d='M58 60 L28 30' stroke='%23f59e0b' stroke-width='4.5' stroke-linecap='round'/><path d='M58 60 L46 48' stroke='%23b45309' stroke-width='4.5' stroke-linecap='round'/><path d='M28 30 L18 20' stroke='%23fef08a' stroke-width='2.2' stroke-linecap='round'/><circle cx='18' cy='20' r='4' fill='%23fbbf24' stroke='%23d97706' stroke-width='1'/><circle cx='17' cy='19' r='1.2' fill='%23ffffff'/><path d='M18 20 Q12 11 6 4 Q13 13 18 20' fill='%2310b981'/><path d='M18 20 Q10 8 3 9 Q6 17 18 20' fill='%23f43f5e'/><path d='M18 20 Q6 15 2 25 Q11 25 18 20' fill='%2306b6d4'/><path d='M18 20 Q13 28 7 35 Q17 29 18 20' fill='%23a855f7'/><circle cx='18' cy='20' r='1.5' fill='%23ffffff' opacity='0.85'/></g></svg>") 6 6, auto;
 }
 .keeper-lock-screen * {
   box-sizing: border-box;
