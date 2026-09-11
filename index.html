@@ -1377,7 +1377,7 @@
         </div>
       </div>
 
-      <!-- 🩺 今日到診病患後續預約提醒橫幅 (提示功能 I) -->
+      <!-- 🩺 近兩週到診病患後續預約提醒橫幅 (提示功能 I) -->
       <div 
         v-if="todayFollowupReminders.length > 0 && showTodayFollowupBanner && isSectionVisible('dashboardTopBanner')" 
         class="bg-gradient-to-r from-teal-50/95 via-cyan-50/80 to-emerald-50/60 text-slate-900 px-4 sm:px-6 py-2 flex items-center justify-between shadow-2xs flex-shrink-0 text-xs border-b border-teal-200/90"
@@ -1386,15 +1386,15 @@
           <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-2xs"><span class="animate-bell-ring">🩺</span></span>
           <div class="truncate text-slate-900">
             <strong class="font-black text-teal-800">【後續預約提醒】</strong>
-            <span>今日到診病人看完診後須提醒當日預約下次到診時間：共 <strong class="text-teal-900 font-black px-1.5 py-0.2 bg-teal-200/70 rounded">{{ todayFollowupReminders.length }}</strong> 位病患</span>
+            <span>近兩週到診病人看完診後須提醒預約下次到診時間：共 <strong class="text-teal-900 font-black px-1.5 py-0.2 bg-teal-200/70 rounded">{{ todayFollowupReminders.length }}</strong> 位病患</span>
           </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 ml-3">
           <button 
-            @click="showTodayFollowupModal = true" 
+            @click="openReminderCenter('followup')" 
             class="px-3 py-1 bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-black shadow-xs transition-colors flex items-center gap-1 text-xs cursor-pointer"
           >
-            <span>立即開啟連結</span>
+            <span>立即開啟名單</span>
             <span>→</span>
           </button>
           <button 
@@ -1407,7 +1407,7 @@
         </div>
       </div>
 
-      <!-- 🚨 今日無法前來 / 未報到改約提醒橫幅 (提示功能 II) -->
+      <!-- 🚨 近兩週無法前來 / 未報到改約提醒橫幅 (提示功能 II) -->
       <div 
         v-if="todayRescheduleReminders.length > 0 && showTodayRescheduleBanner && isSectionVisible('dashboardTopBanner')" 
         class="bg-gradient-to-r from-rose-50/95 via-red-50/70 to-orange-50/50 text-rose-950 px-4 sm:px-6 py-2 flex items-center justify-between shadow-2xs flex-shrink-0 text-xs border-b border-rose-200/90"
@@ -1416,15 +1416,15 @@
           <span class="w-6 h-6 rounded-full bg-rose-200/70 text-rose-900 flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-2xs"><span>⚠️</span></span>
           <div class="truncate text-rose-950">
             <strong class="font-black text-rose-900">【須改約提醒】</strong>
-            <span>當日無法前來需要改約的提醒：共 <strong class="text-rose-900 font-black px-1.5 py-0.2 bg-rose-200/70 rounded">{{ todayRescheduleReminders.length }}</strong> 位未報到病患</span>
+            <span>近兩週無法前來需要改約的提醒：共 <strong class="text-rose-900 font-black px-1.5 py-0.2 bg-rose-200/70 rounded">{{ todayRescheduleReminders.length }}</strong> 位未報到病患</span>
           </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 ml-3">
           <button 
-            @click="showTodayRescheduleModal = true" 
+            @click="openReminderCenter('reschedule')" 
             class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-black shadow-xs transition-colors flex items-center gap-1 text-xs cursor-pointer"
           >
-            <span>立即開啟連結</span>
+            <span>立即開啟名單</span>
             <span>→</span>
           </button>
           <button 
@@ -5228,24 +5228,80 @@
         <!-- 彈窗頂部 Header -->
         <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
           <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 text-white flex items-center justify-center text-lg shadow-md shadow-amber-500/20 flex-shrink-0">
-              <span class="animate-bell-ring">🔔</span>
+            <div 
+              class="w-10 h-10 rounded-xl text-white flex items-center justify-center text-lg shadow-md flex-shrink-0 transition-all"
+              :class="reminderCenterTab === 't3' ? 'bg-gradient-to-tr from-amber-600 to-amber-400 shadow-amber-500/20' : (reminderCenterTab === 'followup' ? 'bg-gradient-to-tr from-teal-600 to-teal-400 shadow-teal-500/20' : 'bg-gradient-to-tr from-rose-600 to-rose-400 shadow-rose-500/20')"
+            >
+              <span v-if="reminderCenterTab === 't3'" class="animate-bell-ring">🔔</span>
+              <span v-else-if="reminderCenterTab === 'followup'">🩺</span>
+              <span v-else>⚠️</span>
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <h3 class="font-black text-slate-900 text-base sm:text-lg">提醒啟動日 (T-3) 智慧追蹤中心</h3>
-                <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold border border-amber-300">
-                  看診前 3 天術前通知
+                <h3 class="font-black text-slate-900 text-base sm:text-lg">
+                  {{ reminderCenterTab === 't3' ? '提醒啟動日 (T-3) 智慧追蹤中心' : (reminderCenterTab === 'followup' ? '近兩週看診後續預約提醒中心' : '近兩週無法前來 / 未報到改約關懷中心') }}
+                </h3>
+                <span 
+                  class="text-xs px-2 py-0.5 rounded-full font-extrabold border"
+                  :class="reminderCenterTab === 't3' ? 'bg-amber-100 text-amber-900 border-amber-300' : (reminderCenterTab === 'followup' ? 'bg-teal-100 text-teal-900 border-teal-300' : 'bg-rose-100 text-rose-900 border-rose-300')"
+                >
+                  {{ reminderCenterTab === 't3' ? '看診前 3 天術前通知' : (reminderCenterTab === 'followup' ? '近兩週看診後續約診' : '近兩週未到診改約') }}
                 </span>
               </div>
               <p class="text-xs text-slate-500">
-                向患者發送術前衛教、特殊用藥叮嚀（抗凝血劑/骨鬆藥）、出席確認與技工件備妥查核
+                {{ reminderCenterTab === 't3' ? '向患者發送術前衛教、特殊用藥叮嚀（抗凝血劑/骨鬆藥）、出席確認與技工件備妥查核' : (reminderCenterTab === 'followup' ? '掌握近兩週到診病患，提醒看完診後預約下次到診時間，落實連續性治療排程' : '掌握近兩週因故無法到診或未報到之病患名單，主動聯絡關心並協助重新預約合適看診時段') }}
               </p>
             </div>
           </div>
-          <button @click="showT3ReminderModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0">✕</button>
+          <button @click="closeReminderCenter()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0 cursor-pointer" title="關閉視窗">✕</button>
         </div>
 
+        <!-- 🔔/🩺/⚠️ 三大提醒中心一鍵切換標籤 (Tab Selector) -->
+        <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl my-2.5 flex-shrink-0">
+          <button 
+            type="button" 
+            @click="reminderCenterTab = 't3'"
+            :class="reminderCenterTab === 't3' ? 'bg-white text-amber-950 shadow-xs font-black border border-amber-200/80 ring-1 ring-amber-300/50' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-200/50'"
+            class="py-2 px-2 rounded-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span class="animate-bell-ring text-xs sm:text-sm">🔔</span>
+            <span class="truncate">臨床提醒 (T-3)</span>
+            <span v-if="pendingT3Count > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black ml-0.5">
+              {{ pendingT3Count }}
+            </span>
+          </button>
+          
+          <button 
+            type="button" 
+            @click="reminderCenterTab = 'followup'"
+            :class="reminderCenterTab === 'followup' ? 'bg-white text-teal-950 shadow-xs font-black border border-teal-200/80 ring-1 ring-teal-300/50' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-200/50'"
+            class="py-2 px-2 rounded-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span class="text-xs sm:text-sm">🩺</span>
+            <span class="truncate">後續預約提醒</span>
+            <span v-if="todayFollowupPendingCount > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black ml-0.5">
+              {{ todayFollowupPendingCount }}
+            </span>
+          </button>
+
+          <button 
+            type="button" 
+            @click="reminderCenterTab = 'reschedule'"
+            :class="reminderCenterTab === 'reschedule' ? 'bg-white text-rose-950 shadow-xs font-black border border-rose-200/80 ring-1 ring-rose-300/50' : 'text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-200/50'"
+            class="py-2 px-2 rounded-lg text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          >
+            <span class="text-xs sm:text-sm">⚠️</span>
+            <span class="truncate">須改約提醒</span>
+            <span v-if="todayReschedulePendingCount > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black ml-0.5">
+              {{ todayReschedulePendingCount }}
+            </span>
+          </button>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- PANEL 1: 臨床提醒 (T-3) 面板內容 -->
+        <!-- ============================================== -->
+        <template v-if="reminderCenterTab === 't3'">
         <!-- 彈窗統計指標列與分頁標籤 -->
         <div class="pt-3 pb-2 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
           <div class="flex p-1 bg-slate-100 rounded-xl text-xs font-bold">
@@ -5419,383 +5475,322 @@
             <div class="text-xs text-slate-400">所有約診病患皆已完成提醒確認，或尚未到達 T-3 啟動日。</div>
           </div>
         </div>
+        </template>
 
-        <!-- 彈窗底部 Footer -->
-        <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
-          <div class="text-xs text-slate-500">
-            💡 個管師備忘：點擊「複製 LINE 範本」將自動帶入患者姓名、看診時段、醫師與專屬術前須知。
-          </div>
-          <button 
-            type="button" 
-            @click="showT3ReminderModal = false" 
-            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-          >
-            關閉視窗
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============================================== -->
-    <!-- MODAL: 今日到診病患後續預約追蹤中心 (Followup Modal) -->
-    <!-- ============================================== -->
-    <div v-if="showTodayFollowupModal" v-cloak class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
-      <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl">
-        <!-- 彈窗頂部 Header -->
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
-          <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-teal-400 text-white flex items-center justify-center text-lg shadow-md shadow-teal-500/20 flex-shrink-0">
-              <span>🩺</span>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h3 class="font-black text-slate-900 text-base sm:text-lg">今日看診後續預約提醒中心</h3>
-                <span class="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 font-extrabold border border-teal-300">
-                  當日看診後續約診
+        <!-- ============================================== -->
+        <!-- PANEL 2: 後續預約提醒 (近兩週) 面板內容 -->
+        <!-- ============================================== -->
+        <template v-else-if="reminderCenterTab === 'followup'">
+          <!-- 統計指標列與分頁標籤 -->
+          <div class="pt-1 pb-2 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+            <div class="flex p-1 bg-slate-100 rounded-xl text-xs font-bold">
+              <button 
+                type="button" 
+                @click="todayFollowupModalFilter = 'pending'"
+                :class="todayFollowupModalFilter === 'pending' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>🚨 待約下次</span>
+                <span v-if="todayFollowupPendingCount > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black">
+                  {{ todayFollowupPendingCount }}
                 </span>
-              </div>
-              <p class="text-xs text-slate-500">
-                掌握今日已到診病患，提醒看完診後當日預約下次到診時間，落實連續性治療排程
-              </p>
+              </button>
+              <button 
+                type="button" 
+                @click="todayFollowupModalFilter = 'done'"
+                :class="todayFollowupModalFilter === 'done' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>✅ 已排下次 ({{ todayFollowupDoneCount }})</span>
+              </button>
+              <button 
+                type="button" 
+                @click="todayFollowupModalFilter = 'all'"
+                :class="todayFollowupModalFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>全部到診 ({{ todayFollowupReminders.length }})</span>
+              </button>
+            </div>
+
+            <div class="text-xs text-slate-500 flex items-center gap-1">
+              <span>統計區間：</span>
+              <span class="font-mono font-bold text-teal-800">近兩週 ({{ twoWeeksAgoStr }} ~ {{ clinicToday }})</span>
             </div>
           </div>
-          <button @click="showTodayFollowupModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0 cursor-pointer">✕</button>
-        </div>
 
-        <!-- 彈窗統計指標列與分頁標籤 -->
-        <div class="pt-3 pb-2 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
-          <div class="flex p-1 bg-slate-100 rounded-xl text-xs font-bold">
-            <button 
-              type="button" 
-              @click="todayFollowupModalFilter = 'pending'"
-              :class="todayFollowupModalFilter === 'pending' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
-              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+          <!-- 列表主體滾動區域 -->
+          <div class="flex-1 overflow-y-auto py-2 pr-1 space-y-3">
+            <div 
+              v-for="rem in displayedTodayFollowupList" 
+              :key="rem.id"
+              class="p-4 rounded-xl border transition-all hover:shadow-md bg-white border-slate-200/90"
             >
-              <span>🚨 待約下次</span>
-              <span v-if="todayFollowupPendingCount > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black">
-                {{ todayFollowupPendingCount }}
-              </span>
-            </button>
-            <button 
-              type="button" 
-              @click="todayFollowupModalFilter = 'done'"
-              :class="todayFollowupModalFilter === 'done' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
-              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>✅ 已排下次 ({{ todayFollowupDoneCount }})</span>
-            </button>
-            <button 
-              type="button" 
-              @click="todayFollowupModalFilter = 'all'"
-              :class="todayFollowupModalFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
-              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>全部到診 ({{ todayFollowupReminders.length }})</span>
-            </button>
-          </div>
-        </div>
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="space-y-1.5 flex-1 min-w-[240px]">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-black text-slate-900 text-base">{{ rem.patientName }}</span>
+                    <span v-if="rem.patientChartNo" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo }}</span>
+                    <span class="px-2 py-0.5 rounded text-xs font-black border inline-flex items-center gap-1 bg-teal-50 text-teal-800 border-teal-200">
+                      {{ rem.status || '已報到' }}
+                    </span>
+                    <span v-if="rem.followupDone" class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      ✅ {{ rem.hasNextApp ? '已安排下次約診' : '已標記處理完成' }}
+                    </span>
+                    <span v-else class="px-2 py-0.5 rounded text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                      ⏳ 待約下次看診時間
+                    </span>
+                  </div>
 
-        <!-- 列表主體滾動區域 -->
-        <div class="flex-1 overflow-y-auto py-2 pr-1 space-y-3">
-          <div 
-            v-for="rem in displayedTodayFollowupList" 
-            :key="rem.id"
-            class="p-4 rounded-xl border transition-all hover:shadow-md bg-white border-slate-200/90"
-          >
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div class="space-y-1.5 flex-1 min-w-[240px]">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-black text-slate-900 text-base">{{ rem.patientName }}</span>
-                  <span v-if="rem.patientChartNo" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo }}</span>
-                  <span class="px-2 py-0.5 rounded text-xs font-black border inline-flex items-center gap-1 bg-teal-50 text-teal-800 border-teal-200">
-                    {{ rem.status || '已報到' }}
-                  </span>
-                  <span v-if="rem.followupDone" class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    ✅ {{ rem.hasNextApp ? '已安排下次約診' : '已標記處理完成' }}
-                  </span>
-                  <span v-else class="px-2 py-0.5 rounded text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
-                    ⏳ 待約下次看診時間
-                  </span>
-                </div>
+                  <div class="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                    <span v-if="rem.phone" class="flex items-center gap-1">
+                      <span class="text-slate-400">📞</span>
+                      <a :href="'tel:' + rem.phone" class="font-mono font-bold text-slate-800 hover:text-brand-600">{{ rem.phone }}</a>
+                    </span>
+                    <span v-if="rem.patientLineId" class="flex items-center gap-1">
+                      <span class="text-emerald-600 font-bold">LINE:</span>
+                      <span class="font-mono font-bold text-slate-700">{{ rem.patientLineId }}</span>
+                    </span>
+                  </div>
 
-                <div class="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
-                  <span v-if="rem.phone" class="flex items-center gap-1">
-                    <span class="text-slate-400">📞</span>
-                    <a :href="'tel:' + rem.phone" class="font-mono font-bold text-slate-800 hover:text-brand-600">{{ rem.phone }}</a>
-                  </span>
-                  <span v-if="rem.patientLineId" class="flex items-center gap-1">
-                    <span class="text-emerald-600 font-bold">LINE:</span>
-                    <span class="font-mono font-bold text-slate-700">{{ rem.patientLineId }}</span>
-                  </span>
-                </div>
-
-                <!-- 今日約診資訊 -->
-                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-1 mt-2">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    <div>
-                      <span class="text-slate-400 font-medium">今日看診時段：</span>
-                      <strong class="text-slate-900">{{ rem.date }} {{ getAppointmentTimeRange(rem) }}</strong>
+                  <!-- 到診看診資訊 -->
+                  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-1 mt-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <div>
+                        <span class="text-slate-400 font-medium">到診時段：</span>
+                        <strong class="text-slate-900">{{ rem.date }} {{ getAppointmentTimeRange(rem) }}</strong>
+                      </div>
+                      <div>
+                        <span class="text-slate-400 font-medium">看診醫師：</span>
+                        <strong class="text-teal-800">{{ formatDoctorDisplay(rem.doctor) }}</strong>
+                      </div>
                     </div>
                     <div>
-                      <span class="text-slate-400 font-medium">看診醫師：</span>
-                      <strong class="text-teal-800">{{ formatDoctorDisplay(rem.doctor) }}</strong>
+                      <span class="text-slate-400 font-medium">當日看診項目：</span>
+                      <span class="font-bold text-slate-800">{{ rem.treatmentItemsText }}</span>
+                      <span v-if="rem.notes" class="text-slate-500 ml-1">（{{ rem.notes }}）</span>
+                    </div>
+                    <div v-if="rem.nextAppInfo" class="pt-1 border-t border-slate-200/60 text-emerald-800 font-bold flex items-center gap-1">
+                      <span>📅 下次約診：</span>
+                      <span class="font-mono">{{ rem.nextAppInfo }}</span>
                     </div>
                   </div>
-                  <div>
-                    <span class="text-slate-400 font-medium">今日看診項目：</span>
-                    <span class="font-bold text-slate-800">{{ rem.treatmentItemsText }}</span>
-                    <span v-if="rem.notes" class="text-slate-500 ml-1">（{{ rem.notes }}）</span>
-                  </div>
-                  <div v-if="rem.nextAppInfo" class="pt-1 border-t border-slate-200/60 text-emerald-800 font-bold flex items-center gap-1">
-                    <span>📅 下次約診：</span>
-                    <span class="font-mono">{{ rem.nextAppInfo }}</span>
-                  </div>
+                </div>
+
+                <!-- 右側操作按鈕區 -->
+                <div class="flex sm:flex-col items-stretch sm:justify-center gap-2 flex-shrink-0 w-full sm:w-44 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:border-slate-100 sm:pl-3">
+                  <button 
+                    type="button"
+                    @click="copyTodayFollowupLineTemplate(rem)"
+                    class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    title="複製此病患回診預約關懷 LINE 訊息"
+                  >
+                    <span>📋</span>
+                    <span class="whitespace-nowrap">複製回診 LINE 提醒</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    @click="scheduleNextAppointmentFor(rem)"
+                    class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    title="為此病患安排下次約診時段"
+                  >
+                    <span>📅</span>
+                    <span class="whitespace-nowrap">安排下次約診</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    @click="toggleTodayFollowupDone(rem)"
+                    :class="rem.followupDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300' : 'bg-teal-700 hover:bg-teal-800 text-white shadow-xs'"
+                    class="w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <span>{{ rem.followupDone ? '↩️' : '✅' }}</span>
+                    <span class="whitespace-nowrap">{{ rem.followupDone ? '設為待處理' : '標記已完成' }}</span>
+                  </button>
+
+                  <button 
+                    v-if="rem.patientId"
+                    type="button"
+                    @click="closeReminderCenter(); viewPatientDetail(rem.patientId)"
+                    class="w-full py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-teal-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+                    title="開啟病患個案完整資料夾"
+                  >
+                    <span>📁</span>
+                    <span class="whitespace-nowrap">開啟個案資料夾</span>
+                  </button>
                 </div>
               </div>
+            </div>
 
-              <!-- 右側操作按鈕區 -->
-              <div class="flex sm:flex-col items-stretch sm:justify-center gap-2 flex-shrink-0 w-full sm:w-44 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:border-slate-100 sm:pl-3">
-                <button 
-                  type="button"
-                  @click="copyTodayFollowupLineTemplate(rem)"
-                  class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  title="複製此病患回診預約關懷 LINE 訊息"
-                >
-                  <span>📋</span>
-                  <span class="whitespace-nowrap">複製回診 LINE 提醒</span>
-                </button>
-
-                <button 
-                  type="button"
-                  @click="scheduleNextAppointmentFor(rem)"
-                  class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  title="為此病患安排下次約診時段"
-                >
-                  <span>📅</span>
-                  <span class="whitespace-nowrap">安排下次約診</span>
-                </button>
-
-                <button 
-                  type="button"
-                  @click="toggleTodayFollowupDone(rem)"
-                  :class="rem.followupDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300' : 'bg-teal-700 hover:bg-teal-800 text-white shadow-xs'"
-                  class="w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                >
-                  <span>{{ rem.followupDone ? '↩️' : '✅' }}</span>
-                  <span class="whitespace-nowrap">{{ rem.followupDone ? '設為待處理' : '標記已完成' }}</span>
-                </button>
-
-                <button 
-                  v-if="rem.patientId"
-                  type="button"
-                  @click="showTodayFollowupModal = false; viewPatientDetail(rem.patientId)"
-                  class="w-full py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-teal-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
-                  title="開啟病患個案完整資料夾"
-                >
-                  <span>📁</span>
-                  <span class="whitespace-nowrap">開啟個案資料夾</span>
-                </button>
-              </div>
+            <div v-if="displayedTodayFollowupList.length === 0" class="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+              <div class="text-3xl">🎉</div>
+              <div class="text-sm font-bold text-slate-700">目前近兩週無需要提醒的後續約診病患</div>
+              <div class="text-xs text-slate-400">近兩週到診之病患皆已排定下次預約，或近兩週尚無到診病患。</div>
             </div>
           </div>
+        </template>
 
-          <div v-if="displayedTodayFollowupList.length === 0" class="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
-            <div class="text-3xl">🎉</div>
-            <div class="text-sm font-bold text-slate-700">目前無需要提醒的後續約診病患</div>
-            <div class="text-xs text-slate-400">今日到診之病患皆已排定下次預約，或今日尚無病患報到看診。</div>
-          </div>
-        </div>
-
-        <!-- 彈窗底部 Footer -->
-        <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
-          <div class="text-xs text-slate-500">
-            💡 個管師備忘：看診結束後立即協助患者確認下次預約時間，可大幅提升治療成效與患者滿意度。
-          </div>
-          <button 
-            type="button" 
-            @click="showTodayFollowupModal = false" 
-            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-          >
-            關閉視窗
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============================================== -->
-    <!-- MODAL: 今日未報到病患改約關懷中心 (Reschedule Modal) -->
-    <!-- ============================================== -->
-    <div v-if="showTodayRescheduleModal" v-cloak class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
-      <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-2xl">
-        <!-- 彈窗頂部 Header -->
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
-          <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-rose-400 text-white flex items-center justify-center text-lg shadow-md shadow-rose-500/20 flex-shrink-0">
-              <span>⚠️</span>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h3 class="font-black text-slate-900 text-base sm:text-lg">今日無法前來 / 未報到改約關懷中心</h3>
-                <span class="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-900 font-extrabold border border-rose-300">
-                  當日未到診改約
+        <!-- ============================================== -->
+        <!-- PANEL 3: 須改約提醒 (近兩週) 面板內容 -->
+        <!-- ============================================== -->
+        <template v-else-if="reminderCenterTab === 'reschedule'">
+          <!-- 統計指標列與分頁標籤 -->
+          <div class="pt-1 pb-2 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+            <div class="flex p-1 bg-slate-100 rounded-xl text-xs font-bold">
+              <button 
+                type="button" 
+                @click="todayRescheduleModalFilter = 'pending'"
+                :class="todayRescheduleModalFilter === 'pending' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>🚨 待改約關懷</span>
+                <span v-if="todayReschedulePendingCount > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black">
+                  {{ todayReschedulePendingCount }}
                 </span>
-              </div>
-              <p class="text-xs text-slate-500">
-                掌握今日因故無法到診或未報到之病患名單，主動聯絡關心並協助重新預約合適看診時段
-              </p>
+              </button>
+              <button 
+                type="button" 
+                @click="todayRescheduleModalFilter = 'done'"
+                :class="todayRescheduleModalFilter === 'done' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>✅ 已改約/已關懷 ({{ todayRescheduleDoneCount }})</span>
+              </button>
+              <button 
+                type="button" 
+                @click="todayRescheduleModalFilter = 'all'"
+                :class="todayRescheduleModalFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
+                class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>全部未到 ({{ todayRescheduleReminders.length }})</span>
+              </button>
             </div>
-          </div>
-          <button @click="showTodayRescheduleModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0 cursor-pointer">✕</button>
-        </div>
 
-        <!-- 彈窗統計指標列與分頁標籤 -->
-        <div class="pt-3 pb-2 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
-          <div class="flex p-1 bg-slate-100 rounded-xl text-xs font-bold">
-            <button 
-              type="button" 
-              @click="todayRescheduleModalFilter = 'pending'"
-              :class="todayRescheduleModalFilter === 'pending' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
-              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>🚨 待改約關懷</span>
-              <span v-if="todayReschedulePendingCount > 0" class="px-1.5 py-0.2 bg-rose-600 text-white text-[10px] rounded-full font-black">
-                {{ todayReschedulePendingCount }}
-              </span>
-            </button>
-            <button 
-              type="button" 
-              @click="todayRescheduleModalFilter = 'done'"
-              :class="todayRescheduleModalFilter === 'done' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
-              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>✅ 已改約/已關懷 ({{ todayRescheduleDoneCount }})</span>
-            </button>
-            <button 
-              type="button" 
-              @click="todayRescheduleModalFilter = 'all'"
-              :class="todayRescheduleModalFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
-              class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>全部未到 ({{ todayRescheduleReminders.length }})</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 列表主體滾動區域 -->
-        <div class="flex-1 overflow-y-auto py-2 pr-1 space-y-3">
-          <div 
-            v-for="rem in displayedTodayRescheduleList" 
-            :key="rem.id"
-            class="p-4 rounded-xl border-2 border-dashed transition-all hover:shadow-md bg-rose-50/40 border-rose-300"
-          >
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div class="space-y-1.5 flex-1 min-w-[240px]">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-black text-slate-900 text-base">{{ rem.patientName }}</span>
-                  <span v-if="rem.patientChartNo" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo }}</span>
-                  <span class="px-2 py-0.5 rounded text-xs font-black border inline-flex items-center gap-1 bg-rose-100 text-rose-800 border-rose-300">
-                    未報到
-                  </span>
-                  <span v-if="rem.rescheduledDone" class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    ✅ 已完成改期追蹤
-                  </span>
-                  <span v-else class="px-2 py-0.5 rounded text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
-                    ⚠️ 今日無法前來，待聯繫改約
-                  </span>
-                </div>
-
-                <div class="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
-                  <span v-if="rem.phone" class="flex items-center gap-1">
-                    <span class="text-slate-400">📞</span>
-                    <a :href="'tel:' + rem.phone" class="font-mono font-bold text-slate-800 hover:text-brand-600">{{ rem.phone }}</a>
-                  </span>
-                  <span v-if="rem.patientLineId" class="flex items-center gap-1">
-                    <span class="text-emerald-600 font-bold">LINE:</span>
-                    <span class="font-mono font-bold text-slate-700">{{ rem.patientLineId }}</span>
-                  </span>
-                </div>
-
-                <!-- 未到診之原約診資訊 -->
-                <div class="bg-white/90 p-2.5 rounded-lg border border-rose-200/80 text-xs space-y-1 mt-2">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    <div>
-                      <span class="text-slate-400 font-medium">原排看診時段：</span>
-                      <strong class="text-slate-900">{{ rem.date }} {{ getAppointmentTimeRange(rem) }}</strong>
-                    </div>
-                    <div>
-                      <span class="text-slate-400 font-medium">原預約醫師：</span>
-                      <strong class="text-teal-800">{{ formatDoctorDisplay(rem.doctor) }}</strong>
-                    </div>
-                  </div>
-                  <div>
-                    <span class="text-slate-400 font-medium">原預定診療項目：</span>
-                    <span class="font-bold text-slate-800">{{ rem.treatmentItemsText }}</span>
-                    <span v-if="rem.notes" class="text-slate-500 ml-1">（{{ rem.notes }}）</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 右側操作按鈕區 -->
-              <div class="flex sm:flex-col items-stretch sm:justify-center gap-2 flex-shrink-0 w-full sm:w-44 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:border-slate-100 sm:pl-3">
-                <button 
-                  type="button"
-                  @click="copyTodayRescheduleLineTemplate(rem)"
-                  class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  title="複製此病患改約關懷 LINE 訊息"
-                >
-                  <span>📋</span>
-                  <span class="whitespace-nowrap">複製改約 LINE 關懷</span>
-                </button>
-
-                <button 
-                  type="button"
-                  @click="scheduleRescheduleAppointmentFor(rem)"
-                  class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  title="重新為病患安排約診時段"
-                >
-                  <span>📅</span>
-                  <span class="whitespace-nowrap">重新安排約診</span>
-                </button>
-
-                <button 
-                  type="button"
-                  @click="toggleTodayRescheduled(rem)"
-                  :class="rem.rescheduledDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300' : 'bg-rose-700 hover:bg-rose-800 text-white shadow-xs'"
-                  class="w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                >
-                  <span>{{ rem.rescheduledDone ? '↩️' : '🔄' }}</span>
-                  <span class="whitespace-nowrap">{{ rem.rescheduledDone ? '設為待改約' : '標記已改期' }}</span>
-                </button>
-
-                <button 
-                  v-if="rem.patientId"
-                  type="button"
-                  @click="showTodayRescheduleModal = false; viewPatientDetail(rem.patientId)"
-                  class="w-full py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-teal-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
-                  title="開啟病患個案完整資料夾"
-                >
-                  <span>📁</span>
-                  <span class="whitespace-nowrap">開啟個案資料夾</span>
-                </button>
-              </div>
+            <div class="text-xs text-slate-500 flex items-center gap-1">
+              <span>統計區間：</span>
+              <span class="font-mono font-bold text-rose-900">近兩週 ({{ twoWeeksAgoStr }} ~ {{ clinicToday }})</span>
             </div>
           </div>
 
-          <div v-if="displayedTodayRescheduleList.length === 0" class="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
-            <div class="text-3xl">🎉</div>
-            <div class="text-sm font-bold text-slate-700">太棒了！今日無未報到病患</div>
-            <div class="text-xs text-slate-400">所有今日約診病患皆正常到診或完成排程，無缺席須改約項目。</div>
+          <!-- 列表主體滾動區域 -->
+          <div class="flex-1 overflow-y-auto py-2 pr-1 space-y-3">
+            <div 
+              v-for="rem in displayedTodayRescheduleList" 
+              :key="rem.id"
+              class="p-4 rounded-xl border-2 border-dashed transition-all hover:shadow-md bg-rose-50/40 border-rose-300"
+            >
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="space-y-1.5 flex-1 min-w-[240px]">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-black text-slate-900 text-base">{{ rem.patientName }}</span>
+                    <span v-if="rem.patientChartNo" class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold">#{{ rem.patientChartNo }}</span>
+                    <span class="px-2 py-0.5 rounded text-xs font-black border inline-flex items-center gap-1 bg-rose-100 text-rose-800 border-rose-300">
+                      未報到
+                    </span>
+                    <span v-if="rem.rescheduledDone" class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      ✅ 已完成改期追蹤
+                    </span>
+                    <span v-else class="px-2 py-0.5 rounded text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                      ⚠️ 無法前來，待聯繫改約
+                    </span>
+                  </div>
+
+                  <div class="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                    <span v-if="rem.phone" class="flex items-center gap-1">
+                      <span class="text-slate-400">📞</span>
+                      <a :href="'tel:' + rem.phone" class="font-mono font-bold text-slate-800 hover:text-brand-600">{{ rem.phone }}</a>
+                    </span>
+                    <span v-if="rem.patientLineId" class="flex items-center gap-1">
+                      <span class="text-emerald-600 font-bold">LINE:</span>
+                      <span class="font-mono font-bold text-slate-700">{{ rem.patientLineId }}</span>
+                    </span>
+                  </div>
+
+                  <!-- 未到診之原約診資訊 -->
+                  <div class="bg-white/90 p-2.5 rounded-lg border border-rose-200/80 text-xs space-y-1 mt-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <div>
+                        <span class="text-slate-400 font-medium">原排看診時段：</span>
+                        <strong class="text-slate-900">{{ rem.date }} {{ getAppointmentTimeRange(rem) }}</strong>
+                      </div>
+                      <div>
+                        <span class="text-slate-400 font-medium">原預約醫師：</span>
+                        <strong class="text-teal-800">{{ formatDoctorDisplay(rem.doctor) }}</strong>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 font-medium">原預定診療項目：</span>
+                      <span class="font-bold text-slate-800">{{ rem.treatmentItemsText }}</span>
+                      <span v-if="rem.notes" class="text-slate-500 ml-1">（{{ rem.notes }}）</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 右側操作按鈕區 -->
+                <div class="flex sm:flex-col items-stretch sm:justify-center gap-2 flex-shrink-0 w-full sm:w-44 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l sm:border-slate-100 sm:pl-3">
+                  <button 
+                    type="button"
+                    @click="copyTodayRescheduleLineTemplate(rem)"
+                    class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    title="複製此病患改約關懷 LINE 訊息"
+                  >
+                    <span>📋</span>
+                    <span class="whitespace-nowrap">複製改約 LINE 關懷</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    @click="scheduleRescheduleAppointmentFor(rem)"
+                    class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    title="重新為病患安排約診時段"
+                  >
+                    <span>📅</span>
+                    <span class="whitespace-nowrap">重新安排約診</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    @click="toggleTodayRescheduled(rem)"
+                    :class="rem.rescheduledDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-300' : 'bg-rose-700 hover:bg-rose-800 text-white shadow-xs'"
+                    class="w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <span>{{ rem.rescheduledDone ? '↩️' : '🔄' }}</span>
+                    <span class="whitespace-nowrap">{{ rem.rescheduledDone ? '設為待改約' : '標記已改期' }}</span>
+                  </button>
+
+                  <button 
+                    v-if="rem.patientId"
+                    type="button"
+                    @click="closeReminderCenter(); viewPatientDetail(rem.patientId)"
+                    class="w-full py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-teal-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+                    title="開啟病患個案完整資料夾"
+                  >
+                    <span>📁</span>
+                    <span class="whitespace-nowrap">開啟個案資料夾</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="displayedTodayRescheduleList.length === 0" class="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+              <div class="text-3xl">🎉</div>
+              <div class="text-sm font-bold text-slate-700">太棒了！近兩週無未報到病患</div>
+              <div class="text-xs text-slate-400">近兩週約診病患皆正常到診或已完成改期排程，無缺席須改約項目。</div>
+            </div>
           </div>
-        </div>
+        </template>
 
         <!-- 彈窗底部 Footer -->
         <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
           <div class="text-xs text-slate-500">
-            💡 個管師備忘：點擊「重新安排約診」將自動帶入病患資料與未到備忘，方便迅速協調新時段。
+            <span v-if="reminderCenterTab === 't3'">💡 個管師備忘：點擊「複製 LINE 範本」將自動帶入患者姓名、看診時段、醫師與專屬術前須知。</span>
+            <span v-else-if="reminderCenterTab === 'followup'">💡 個管師備忘：看診結束後立即協助患者確認下次預約時間，可大幅提升治療成效與患者滿意度。</span>
+            <span v-else>💡 個管師備忘：掌握近兩週未報到病患並主動改約關懷，能有效降低病患流失並維持療程完整。</span>
           </div>
           <button 
             type="button" 
-            @click="showTodayRescheduleModal = false" 
+            @click="closeReminderCenter()" 
             class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
           >
             關閉視窗
@@ -5803,6 +5798,7 @@
         </div>
       </div>
     </div>
+
 
     <!-- ============================================== -->
     <!-- MODAL: 當日約診排程清單展開檢視 (Day Appointments Modal) -->
@@ -9042,7 +9038,10 @@
         const dashboardT3Tab = ref('pending');
         const t3ModalFilter = ref('pending');
 
-        // 提示功能 I & II：今日到診後續約診提醒與未報到改約提醒
+        // 提醒追蹤中心主頁籤：'t3' (臨床提醒) | 'followup' (後續預約提醒) | 'reschedule' (須改約提醒)
+        const reminderCenterTab = ref('t3');
+
+        // 提示功能 I & II：近兩週到診後續約診提醒與未報到改約提醒
         const showTodayFollowupBanner = ref(true);
         const showTodayRescheduleBanner = ref(true);
         const showTodayFollowupModal = ref(false);
@@ -9054,6 +9053,37 @@
         const todayRescheduleModalFilter = ref('pending');
         const showToast = ref(false);
         const copyToastMessage = ref('');
+
+        const openReminderCenter = (tab = 't3', filter = null) => {
+          reminderCenterTab.value = tab;
+          if (tab === 't3' && filter) {
+            t3ModalFilter.value = filter;
+          } else if (tab === 'followup' && filter) {
+            todayFollowupModalFilter.value = filter;
+          } else if (tab === 'reschedule' && filter) {
+            todayRescheduleModalFilter.value = filter;
+          }
+          showT3ReminderModal.value = true;
+        };
+
+        const closeReminderCenter = () => {
+          showT3ReminderModal.value = false;
+          showTodayFollowupModal.value = false;
+          showTodayRescheduleModal.value = false;
+        };
+
+        watch(showTodayFollowupModal, (val) => {
+          if (val) {
+            openReminderCenter('followup');
+            showTodayFollowupModal.value = false;
+          }
+        });
+        watch(showTodayRescheduleModal, (val) => {
+          if (val) {
+            openReminderCenter('reschedule');
+            showTodayRescheduleModal.value = false;
+          }
+        });
 
         // 暗黑模式 (Dark Mode) 狀態與切換器
         const isDarkMode = ref(localStorage.getItem('keanho_theme') === 'dark');
@@ -11315,13 +11345,28 @@
           return pendingT3Reminders.value;
         });
 
+        // 取得近兩週起始日期 (過去 14 天)
+        const getTwoWeeksAgoDate = (baseDateStr) => {
+          const refBase = baseDateStr || clinicToday.value || '2026-09-12';
+          const [y, m, d] = refBase.split('-').map(Number);
+          const dt = new Date(y, m - 1, d);
+          dt.setDate(dt.getDate() - 13); // 包含基準日共 14 天
+          const rY = dt.getFullYear();
+          const rM = String(dt.getMonth() + 1).padStart(2, '0');
+          const rD = String(dt.getDate()).padStart(2, '0');
+          return `${rY}-${rM}-${rD}`;
+        };
+
+        const twoWeeksAgoStr = computed(() => getTwoWeeksAgoDate(clinicToday.value));
+
         // ==============================================
-        // 提示功能 I：今日到診病患後續預約提醒 (看診後提醒當日預約下次到診時間)
+        // 提示功能 I：近兩週到診病患後續預約提醒 (看診後提醒預約下次到診時間)
         // ==============================================
         const todayFollowupReminders = computed(() => {
           const todayStr = clinicToday.value;
+          const twoWeeksStr = getTwoWeeksAgoDate(todayStr);
           return appointments.value
-            .filter(app => app.date === todayStr && ['已報到', '看診中', '已完成'].includes(app.status))
+            .filter(app => app.date >= twoWeeksStr && app.date <= todayStr && ['已報到', '看診中', '已完成'].includes(app.status))
             .map(app => {
               const patient = patients.value.find(p => (app.patientId && String(p.id) === String(app.patientId)) || (app.patientName && p.name === app.patientName)) || {};
               const chartNo = patient.chartNo || app.patientChartNo || app.chartNo || '';
@@ -11330,10 +11375,10 @@
                 : (app.procedure ? app.procedure.split(/[,、，\s]+/).filter(Boolean) : (app.category ? [app.category] : []));
               const treatmentItemsText = items.length > 0 ? items.join('、') : (app.procedure || app.category || '一般門診');
 
-              // 檢查該病患是否已預約未來約診
+              // 檢查該病患在此次看診之後是否已預約約診
               const futureApp = appointments.value.find(a => 
                 ((app.patientId && String(a.patientId) === String(app.patientId)) || (app.patientName && a.patientName === app.patientName)) &&
-                (a.date > todayStr || (a.date === todayStr && a.time > app.time && a.id !== app.id))
+                (a.date > app.date || (a.date === app.date && a.time > app.time && a.id !== app.id))
               );
               const hasNextApp = !!futureApp;
               const nextAppInfo = futureApp ? `${futureApp.date} ${futureApp.time} (${futureApp.doctor || '醫師'})` : '';
@@ -11358,6 +11403,7 @@
             })
             .sort((a, b) => {
               if (a.followupDone !== b.followupDone) return a.followupDone ? 1 : -1;
+              if (a.date !== b.date) return (b.date || '').localeCompare(a.date || '');
               return (a.time || '').localeCompare(b.time || '');
             });
         });
@@ -11377,12 +11423,13 @@
         });
 
         // ==============================================
-        // 提示功能 II：今日無法前來 / 未報到病患改約提醒
+        // 提示功能 II：近兩週無法前來 / 未報到病患改約提醒
         // ==============================================
         const todayRescheduleReminders = computed(() => {
           const todayStr = clinicToday.value;
+          const twoWeeksStr = getTwoWeeksAgoDate(todayStr);
           return appointments.value
-            .filter(app => app.date === todayStr && (app.status === '未報到' || app.status === '未到'))
+            .filter(app => app.date >= twoWeeksStr && app.date <= todayStr && (app.status === '未報到' || app.status === '未到'))
             .map(app => {
               const patient = patients.value.find(p => (app.patientId && String(p.id) === String(app.patientId)) || (app.patientName && p.name === app.patientName)) || {};
               const chartNo = patient.chartNo || app.patientChartNo || app.chartNo || '';
@@ -11404,6 +11451,7 @@
             })
             .sort((a, b) => {
               if (a.rescheduledDone !== b.rescheduledDone) return a.rescheduledDone ? 1 : -1;
+              if (a.date !== b.date) return (b.date || '').localeCompare(a.date || '');
               return (a.time || '').localeCompare(b.time || '');
             });
         });
@@ -11427,7 +11475,7 @@
           const pName = rem.patientName || '病患先生/小姐';
           const doc = rem.doctor || '醫師';
           const clinicName = (systemSettings.value && systemSettings.value.clinic && systemSettings.value.clinic.name) || '健和牙醫診所';
-          const text = `【${clinicName}】回診預約提醒\n${pName} 您好：\n感謝您今日前來本院看診！\n為維持您的牙齒治療進度與最佳療效，提醒您看診後請記得與櫃檯或個管師預約下次看診時間喔！\n\n若返家後有任何牙齒不適或衛教疑問，歡迎隨時回覆訊息與我們聯絡。\n${clinicName} 祝您健康順心！`;
+          const text = `【${clinicName}】回診預約提醒\n${pName} 您好：\n感謝您前來本院看診！\n為維持您的牙齒治療進度與最佳療效，提醒您看診後請記得與櫃檯或個管師預約下次看診時間喔！\n\n若返家後有任何牙齒不適或衛教疑問，歡迎隨時回覆訊息與我們聯絡。\n${clinicName} 祝您健康順心！`;
           navigator.clipboard.writeText(text).then(() => {
             alert(`已成功複製【${pName}】專屬回診預約 LINE 提醒範本！`);
           }).catch(() => {
@@ -11439,7 +11487,8 @@
           const pName = rem.patientName || '病患先生/小姐';
           const doc = rem.doctor || '醫師';
           const clinicName = (systemSettings.value && systemSettings.value.clinic && systemSettings.value.clinic.name) || '健和牙醫診所';
-          const text = `【${clinicName}】看診改約關懷通知\n${pName} 您好：\n今日原訂安排您由 ${doc} 看診，因今日您未能如期前來，診所同仁十分關心您的狀況。\n\n為避免耽擱您的治療排程，個管師將協助您重新安排合適的看診時段。請直接回覆此訊息您方便的日期與時段，或來電診所由專人為您保留看診時間。\n\n${clinicName} 關心您的牙齒健康！`;
+          const datePrompt = rem.date ? `於 ${rem.date} ${rem.time || ''} ` : '';
+          const text = `【${clinicName}】看診改約關懷通知\n${pName} 您好：\n原訂安排您${datePrompt}由 ${doc} 看診，因當日未能如期前來，診所同仁十分關心您的狀況。\n\n為避免耽擱您的治療排程，個管師將協助您重新安排合適的看診時段。請直接回覆此訊息您方便的日期與時段，或來電診所由專人為您保留看診時間。\n\n${clinicName} 關心您的牙齒健康！`;
           navigator.clipboard.writeText(text).then(() => {
             alert(`已成功複製【${pName}】專屬改約關懷 LINE 範本！`);
           }).catch(() => {
@@ -11448,7 +11497,7 @@
         };
 
         const scheduleNextAppointmentFor = (rem) => {
-          showTodayFollowupModal.value = false;
+          closeReminderCenter();
           const p = rem.patient && rem.patient.id ? rem.patient : patients.value.find(x => x.name === rem.patientName || x.id === rem.patientId);
           if (p) {
             openAppointmentForPatient(p);
@@ -11461,7 +11510,7 @@
         };
 
         const scheduleRescheduleAppointmentFor = (rem) => {
-          showTodayRescheduleModal.value = false;
+          closeReminderCenter();
           const p = rem.patient && rem.patient.id ? rem.patient : patients.value.find(x => x.name === rem.patientName || x.id === rem.patientId);
           if (p) {
             openAppointmentForPatient(p);
@@ -11491,6 +11540,9 @@
           if (targetApp) {
             targetApp.rescheduledDone = !targetApp.rescheduledDone;
             saveToStorage();
+            copyToastMessage.value = targetApp.rescheduledDone ? '✅ 已標記為已完成改期追蹤' : '↩️ 已重設為待改約關懷';
+            showToast.value = true;
+            setTimeout(() => { showToast.value = false; }, 2000);
           }
         };
 
@@ -14091,6 +14143,10 @@
           showT3TopBanner,
           dashboardT3Tab,
           t3ModalFilter,
+          reminderCenterTab,
+          openReminderCenter,
+          closeReminderCenter,
+          twoWeeksAgoStr,
           showToast,
           copyToastMessage,
           clinicToday,
