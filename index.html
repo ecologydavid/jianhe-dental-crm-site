@@ -3823,17 +3823,151 @@
                 v-for="app in getPatientAppointments(selectedPatient.id)" 
                 :key="app.id"
                 :class="hasAppointmentDuplicateWarning(app) ? 'border-rose-300 bg-rose-50/30 dark:bg-rose-950/30 ring-1 ring-rose-300' : 'border-slate-200 bg-slate-50'"
-                class="p-3 hover:bg-slate-100/70 border rounded-xl flex items-center justify-between text-xs transition-colors"
+                class="p-3 hover:bg-slate-100/70 border rounded-xl flex items-start justify-between text-xs transition-colors"
               >
                 <div class="min-w-0 flex-1 pr-2">
                   <div class="font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                    <span>{{ app.date }}</span>
-                    <span class="text-slate-300 font-normal">|</span>
-                    <span class="font-black text-slate-900">{{ getAppointmentTimeRange(app) }}</span>
+                    <button 
+                      type="button" 
+                      @click.stop="startEditAppointmentDateTime(app)"
+                      class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/80 border border-blue-200/80 dark:border-blue-700/60 text-blue-950 dark:text-blue-100 transition-all cursor-pointer group shadow-2xs"
+                      title="點擊直接更改預約日期及時間（改期）"
+                    >
+                      <span class="font-mono font-bold group-hover:underline">{{ app.date }}</span>
+                      <span class="text-blue-300 dark:text-blue-600 font-normal">|</span>
+                      <span class="font-mono font-black group-hover:underline">{{ getAppointmentTimeRange(app) }}</span>
+                      <span class="text-[10px] text-blue-600 dark:text-blue-400 font-extrabold flex items-center gap-0.5 ml-0.5">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                        <span>改期</span>
+                      </span>
+                    </button>
                     <span class="text-slate-500 font-normal">({{ app.duration || 60 }}分鐘 {{ formatDoctorDisplay(app.doctor) }})</span>
                     <span v-if="hasAppointmentDuplicateWarning(app)" class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-extrabold flex items-center gap-0.5">
                       <span>⚠️ 重複約診時段</span>
                     </span>
+                  </div>
+
+                  <!-- ✏️ 內嵌快速更改預約日期時間面板 (改期) -->
+                  <div v-if="editingAppointmentId === app.id" class="mt-2.5 mb-2 p-3 bg-white dark:bg-slate-800 border-2 border-blue-400 dark:border-blue-600 rounded-xl shadow-md space-y-2.5" @click.stop>
+                    <div class="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-700">
+                      <span class="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span>更改預約日期及時間（保留既有療程與項目）</span>
+                      </span>
+                      <button type="button" @click.stop="cancelEditAppointmentDateTime" class="text-slate-400 hover:text-slate-600 text-xs font-bold px-1.5 py-0.5 rounded hover:bg-slate-100">
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <!-- 預約看診日期 -->
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                          📅 預約看診日期 <span class="text-rose-500">*</span>
+                        </label>
+                        <input 
+                          type="date" 
+                          v-model="editAppForm.date" 
+                          class="w-full text-xs font-bold text-slate-800 dark:text-slate-100 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20 outline-none transition-all" 
+                        />
+                      </div>
+
+                      <!-- 開始看診時間 -->
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                          ⏰ 開始看診時間 <span class="text-rose-500">*</span>
+                        </label>
+                        <input 
+                          type="time" 
+                          v-model="editAppForm.time" 
+                          step="300"
+                          class="w-full text-xs font-bold text-slate-800 dark:text-slate-100 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20 outline-none transition-all" 
+                        />
+                      </div>
+
+                      <!-- 預計時長 -->
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                          ⏱️ 預計時長
+                        </label>
+                        <select 
+                          v-model.number="editAppForm.duration" 
+                          class="w-full text-xs font-bold text-slate-800 dark:text-slate-100 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20 outline-none transition-all"
+                        >
+                          <option :value="15">15 分鐘</option>
+                          <option :value="20">20 分鐘</option>
+                          <option :value="30">30 分鐘</option>
+                          <option :value="40">40 分鐘</option>
+                          <option :value="45">45 分鐘</option>
+                          <option :value="60">60 分鐘 (1小時)</option>
+                          <option :value="90">90 分鐘 (1.5小時)</option>
+                          <option :value="120">120 分鐘 (2小時)</option>
+                          <option :value="150">150 分鐘 (2.5小時)</option>
+                          <option :value="180">180 分鐘 (3小時)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- 快捷時段預覽 & 醫師/診間微調 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-700">
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                          👨‍⚕️ 看診醫師
+                        </label>
+                        <select 
+                          v-model="editAppForm.doctor" 
+                          @change="onEditAppDoctorChange"
+                          class="w-full text-xs font-bold text-slate-800 dark:text-slate-100 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:border-blue-500 outline-none"
+                        >
+                          <option v-for="doc in clinicDoctors" :key="doc.id" :value="doc.name">
+                            {{ doc.name }} ({{ doc.chair }})
+                          </option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                          💺 看診診間
+                        </label>
+                        <select 
+                          v-model="editAppForm.chair" 
+                          class="w-full text-xs font-bold text-slate-800 dark:text-slate-100 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:border-blue-500 outline-none"
+                        >
+                          <option value="A診">A 診</option>
+                          <option value="B診">B 診</option>
+                          <option value="C診">C 診</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- 連動更新效果說明 -->
+                    <div class="p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg text-[11px] text-amber-900 dark:text-amber-200 space-y-1">
+                      <div class="flex items-center gap-1.5 font-bold">
+                        <span>🔔 連動提醒啟動日 (T-3)：</span>
+                        <span class="font-mono font-black text-amber-800 dark:text-amber-300">{{ getTMinus3Date(editAppForm.date) }}</span>
+                        <span v-if="editAppForm.date !== app.date" class="text-[10px] text-amber-700 font-normal">（原為 {{ getTMinus3Date(app.date) }}，將自動更新）</span>
+                      </div>
+                      <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                        預計看診時段：<strong class="text-slate-800 dark:text-slate-200 font-mono">{{ calculatePreviewTimeRange(editAppForm.time, editAppForm.duration) }}</strong> ｜ 原有療程、看診項目與備忘記事皆完整保留
+                      </div>
+                    </div>
+
+                    <!-- 儲存 / 取消 按鈕 -->
+                    <div class="flex items-center justify-end gap-2 pt-1">
+                      <button 
+                        type="button"
+                        @click.stop="cancelEditAppointmentDateTime" 
+                        class="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold rounded-lg transition-colors cursor-pointer"
+                      >
+                        取消
+                      </button>
+                      <button 
+                        type="button"
+                        @click.stop="saveAppointmentDateTime(app)" 
+                        class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-black rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>💾 確認更改並同步</span>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- ⚠️ 重複約診顯著提醒橫幅（如 9/11 16:00 等重複時段即時示警） -->
@@ -3885,7 +4019,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
                   <button 
                     @click.stop="toggleAppointmentStatus(app)"
                     class="px-2.5 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors border shadow-2xs"
@@ -3893,6 +4027,14 @@
                     :title="`點擊切換狀態（目前：${app.status || '已預約'}，點擊切換：已預約 ➔ 已報到 ➔ 未報到）`"
                   >
                     {{ app.status || '已預約' }}
+                  </button>
+                  <button 
+                    type="button"
+                    @click.stop="startEditAppointmentDateTime(app)"
+                    class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded transition-colors"
+                    title="更改預約日期及時間（改期）"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                   </button>
                   <button 
                     @click.stop="deleteAppointment(app.id)"
@@ -12612,6 +12754,90 @@
           }
         };
 
+        // ==========================================
+        // 門診約診排程連動：更改預約日期及時間 (改期)
+        // ==========================================
+        const editingAppointmentId = ref(null);
+        const editAppForm = ref({
+          id: '',
+          date: '',
+          time: '',
+          duration: 60,
+          doctor: '',
+          chair: ''
+        });
+
+        const calculatePreviewTimeRange = (startTime, duration) => {
+          if (!startTime) return '';
+          const startMin = timeToMinutes(startTime);
+          const dur = Number(duration) || 60;
+          return `${startTime}-${minutesToTime(startMin + dur)}`;
+        };
+
+        const onEditAppDoctorChange = () => {
+          if (editAppForm.value.doctor) {
+            editAppForm.value.chair = getDefaultChairForDoctor(editAppForm.value.doctor);
+          }
+        };
+
+        const startEditAppointmentDateTime = (app) => {
+          if (!app) return;
+          editAppForm.value = {
+            id: app.id,
+            date: app.date || clinicToday.value,
+            time: app.time || '14:30',
+            duration: Number(app.duration) || 60,
+            doctor: app.doctor || (clinicDoctors.value[0]?.name || 'TE 醫師'),
+            chair: app.chair || getDefaultChairForDoctor(app.doctor)
+          };
+          editingAppointmentId.value = app.id;
+        };
+
+        const cancelEditAppointmentDateTime = () => {
+          editingAppointmentId.value = null;
+        };
+
+        const saveAppointmentDateTime = (app) => {
+          if (!app) return;
+          const form = editAppForm.value;
+          if (!form.date || !form.time) {
+            alert('請填寫完整的預約看診日期與開始時間！');
+            return;
+          }
+
+          const oldDate = app.date;
+          const oldTime = app.time;
+
+          // 1. 更新預約核心時程欄位
+          app.date = form.date;
+          app.time = form.time;
+          app.duration = Number(form.duration) || 60;
+          if (form.doctor) app.doctor = form.doctor;
+          if (form.chair) app.chair = form.chair;
+
+          // 2. 自動連動重算 T-3 提醒日 (到診日 - 3 天)
+          const newT3 = getTMinus3Date(form.date);
+          app.t3Date = newT3;
+
+          // 3. 若日期變更，自動重設 T-3 提醒發送狀態，確保新時段能如期發送術前提醒
+          if (oldDate !== form.date) {
+            app.reminderDone = false;
+            app.reminderSentAt = null;
+          }
+
+          // 4. 寫入本機儲存並同步至雲端 (Supabase)
+          saveToStorage();
+
+          // 5. 關閉編輯狀態
+          editingAppointmentId.value = null;
+
+          // 6. 成功反饋提示
+          const newTimeRange = getAppointmentTimeRange(app);
+          copyToastMessage.value = `✅ 已成功將【${app.patientName}】約診更改為 ${app.date} ${newTimeRange}！T-3 提醒日 (${newT3}) 與全系統排程已同步更新。`;
+          showToast.value = true;
+          setTimeout(() => { showToast.value = false; }, 3500);
+        };
+
         const showDeletePatientConfirmModal = ref(false);
         const patientToDelete = ref(null);
 
@@ -14255,6 +14481,13 @@
           executeDeletePatient,
           hasAppointmentDuplicateWarning,
           toggleAppointmentStatus,
+          editingAppointmentId,
+          editAppForm,
+          startEditAppointmentDateTime,
+          cancelEditAppointmentDateTime,
+          saveAppointmentDateTime,
+          calculatePreviewTimeRange,
+          onEditAppDoctorChange,
           openAppointmentDetail,
           onAppointmentRowClick,
           getChairDayAppointments,
