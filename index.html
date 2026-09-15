@@ -1386,7 +1386,7 @@
           <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-2xs"><span class="animate-bell-ring">🩺</span></span>
           <div class="truncate text-slate-900">
             <strong class="font-black text-teal-800">【後續預約提醒】</strong>
-            <span>近兩週到診病人看完診後須提醒預約下次到診時間：共 <strong class="text-teal-900 font-black px-1.5 py-0.2 bg-teal-200/70 rounded">{{ todayFollowupReminders.length }}</strong> 位病患</span>
+            <span>近兩週到診病人看完診後須提醒預約下次到診時間，共 <strong class="text-teal-900 font-black px-1.5 py-0.2 bg-teal-200/70 rounded">{{ todayFollowupReminders.length }}</strong> 位病患，待約下次 <strong class="text-teal-900 font-black px-1.5 py-0.2 bg-teal-200/70 rounded">{{ todayFollowupPendingCount }}</strong> 位病患</span>
           </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 ml-3">
@@ -1407,7 +1407,7 @@
         </div>
       </div>
 
-      <!-- 🚨 近兩週無法前來 / 未報到改約提醒橫幅 (提示功能 II) -->
+      <!-- 🚨 近三個月無法前來 / 未報到改約提醒橫幅 (提示功能 II) -->
       <div 
         v-if="todayRescheduleReminders.length > 0 && showTodayRescheduleBanner && isSectionVisible('dashboardTopBanner')" 
         class="bg-gradient-to-r from-rose-50/95 via-red-50/70 to-orange-50/50 text-rose-950 px-4 sm:px-6 py-2 flex items-center justify-between shadow-2xs flex-shrink-0 text-xs border-b border-rose-200/90"
@@ -1416,7 +1416,7 @@
           <span class="w-6 h-6 rounded-full bg-rose-200/70 text-rose-900 flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-2xs"><span>⚠️</span></span>
           <div class="truncate text-rose-950">
             <strong class="font-black text-rose-900">【須改約提醒】</strong>
-            <span>近兩週無法前來需要改約的提醒：共 <strong class="text-rose-900 font-black px-1.5 py-0.2 bg-rose-200/70 rounded">{{ todayRescheduleReminders.length }}</strong> 位未報到病患</span>
+            <span>近三個月無法前來須改約的提醒，共 <strong class="text-rose-900 font-black px-1.5 py-0.2 bg-rose-200/70 rounded">{{ todayRescheduleReminders.length }}</strong> 位未報到病患，待改約關懷為 <strong class="text-rose-900 font-black px-1.5 py-0.2 bg-rose-200/70 rounded">{{ todayReschedulePendingCount }}</strong> 位病患</span>
           </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 ml-3">
@@ -3798,7 +3798,7 @@
               </span>
             </div>
             <div class="grid grid-cols-2 gap-2 text-slate-700">
-              <div><span class="text-slate-500 font-bold">總治療計畫：</span><span class="font-bold text-teal-800">{{ selectedPatient.consultCategory }}</span></div>
+              <div><span class="text-slate-500 font-bold">總治療計畫：</span><span class="font-bold text-teal-800">{{ getPatientConsultCategoryDisplay(selectedPatient) }}</span></div>
               <div><span class="text-slate-500 font-bold">主責醫師順序：</span><span class="font-bold text-slate-900">{{ selectedPatient.leadDoctors || selectedPatient.doctor }}</span></div>
             </div>
             <div v-if="selectedPatient.specialNotes" class="mt-2 pt-2 border-t border-teal-200/60 text-slate-800">
@@ -3859,7 +3859,7 @@
                       </button>
                     </div>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                       <!-- 預約看診日期 -->
                       <div>
                         <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
@@ -3906,10 +3906,8 @@
                           <option :value="180">180 分鐘 (3小時)</option>
                         </select>
                       </div>
-                    </div>
 
-                    <!-- 快捷時段預覽 & 醫師/診間微調 -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-700">
+                      <!-- 看診醫師 -->
                       <div>
                         <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
                           👨‍⚕️ 看診醫師
@@ -3920,21 +3918,8 @@
                           class="w-full text-xs font-bold text-slate-800 dark:text-slate-100 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:border-blue-500 outline-none"
                         >
                           <option v-for="doc in clinicDoctors" :key="doc.id" :value="doc.name">
-                            {{ doc.name }} ({{ doc.chair }})
+                            {{ doc.name }}
                           </option>
-                        </select>
-                      </div>
-                      <div>
-                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                          💺 看診診間
-                        </label>
-                        <select 
-                          v-model="editAppForm.chair" 
-                          class="w-full text-xs font-bold text-slate-800 dark:text-slate-100 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:border-blue-500 outline-none"
-                        >
-                          <option value="A診">A 診</option>
-                          <option value="B診">B 診</option>
-                          <option value="C診">C 診</option>
                         </select>
                       </div>
                     </div>
@@ -5385,17 +5370,17 @@
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="font-black text-slate-900 text-base sm:text-lg">
-                  {{ reminderCenterTab === 't3' ? '提醒啟動日 (T-3) 智慧追蹤中心' : (reminderCenterTab === 'followup' ? '近兩週看診後續預約提醒中心' : '近兩週無法前來 / 未報到改約關懷中心') }}
+                  {{ reminderCenterTab === 't3' ? '提醒啟動日 (T-3) 智慧追蹤中心' : (reminderCenterTab === 'followup' ? '近兩週看診後續預約提醒中心' : '近三個月無法前來 / 未報到改約關懷中心') }}
                 </h3>
                 <span 
                   class="text-xs px-2 py-0.5 rounded-full font-extrabold border"
                   :class="reminderCenterTab === 't3' ? 'bg-amber-100 text-amber-900 border-amber-300' : (reminderCenterTab === 'followup' ? 'bg-teal-100 text-teal-900 border-teal-300' : 'bg-rose-100 text-rose-900 border-rose-300')"
                 >
-                  {{ reminderCenterTab === 't3' ? '看診前 3 天術前通知' : (reminderCenterTab === 'followup' ? '近兩週看診後續約診' : '近兩週未到診改約') }}
+                  {{ reminderCenterTab === 't3' ? '看診前 3 天術前通知' : (reminderCenterTab === 'followup' ? '近兩週看診後續約診' : '近三個月未到診改約') }}
                 </span>
               </div>
               <p class="text-xs text-slate-500">
-                {{ reminderCenterTab === 't3' ? '向患者發送術前衛教、特殊用藥叮嚀（抗凝血劑/骨鬆藥）、出席確認與技工件備妥查核' : (reminderCenterTab === 'followup' ? '掌握近兩週到診病患，提醒看完診後預約下次到診時間，落實連續性治療排程' : '掌握近兩週因故無法到診或未報到之病患名單，主動聯絡關心並協助重新預約合適看診時段') }}
+                {{ reminderCenterTab === 't3' ? '向患者發送術前衛教、特殊用藥叮嚀（抗凝血劑/骨鬆藥）、出席確認與技工件備妥查核' : (reminderCenterTab === 'followup' ? '掌握近兩週到診病患，提醒看完診後預約下次到診時間，落實連續性治療排程' : '掌握近三個月因故無法到診或未報到之病患名單，主動聯絡關心並協助重新預約合適看診時段') }}
               </p>
             </div>
           </div>
@@ -5815,7 +5800,7 @@
 
             <div class="text-xs text-slate-500 flex items-center gap-1">
               <span>統計區間：</span>
-              <span class="font-mono font-bold text-rose-900">近兩週 ({{ twoWeeksAgoStr }} ~ {{ clinicToday }})</span>
+              <span class="font-mono font-bold text-rose-900">近三個月 ({{ threeMonthsAgoStr }} ~ {{ clinicToday }})</span>
             </div>
           </div>
 
@@ -5921,8 +5906,8 @@
 
             <div v-if="displayedTodayRescheduleList.length === 0" class="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
               <div class="text-3xl">🎉</div>
-              <div class="text-sm font-bold text-slate-700">太棒了！近兩週無未報到病患</div>
-              <div class="text-xs text-slate-400">近兩週約診病患皆正常到診或已完成改期排程，無缺席須改約項目。</div>
+              <div class="text-sm font-bold text-slate-700">太棒了！近三個月無未報到病患</div>
+              <div class="text-xs text-slate-400">近三個月約診病患皆正常到診或已完成改期排程，無缺席須改約項目。</div>
             </div>
           </div>
         </template>
@@ -5932,7 +5917,7 @@
           <div class="text-xs text-slate-500">
             <span v-if="reminderCenterTab === 't3'">💡 個管師備忘：點擊「複製 LINE 範本」將自動帶入患者姓名、看診時段、醫師與專屬術前須知。</span>
             <span v-else-if="reminderCenterTab === 'followup'">💡 個管師備忘：看診結束後立即協助患者確認下次預約時間，可大幅提升治療成效與患者滿意度。</span>
-            <span v-else>💡 個管師備忘：掌握近兩週未報到病患並主動改約關懷，能有效降低病患流失並維持療程完整。</span>
+            <span v-else>💡 個管師備忘：掌握近三個月未報到病患並主動改約關懷，能有效降低病患流失並維持療程完整。</span>
           </div>
           <button 
             type="button" 
@@ -10638,6 +10623,23 @@
             ensurePatientChartData(p);
           });
 
+          // 總治療計畫自動升級校正：若 consultCategory 儲存了處置細項 (如 BT資料蒐集, EP矯正諮詢)，自動轉為所屬專科治療項目大類 (如 Ortho)
+          const defaultMapping = (systemSettings.value?.appointmentConfig?.treatmentItemsMapping) || DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping;
+          patients.value.forEach(p => {
+            if (p.consultCategory) {
+              const curVal = String(p.consultCategory).trim();
+              const matchedCats = new Set();
+              for (const [cat, subItems] of Object.entries(defaultMapping)) {
+                if (subItems.some(sub => curVal.includes(sub))) {
+                  matchedCats.add(cat);
+                }
+              }
+              if (matchedCats.size > 0) {
+                p.consultCategory = Array.from(matchedCats).join(' / ');
+              }
+            }
+          });
+
           // 相容性防呆：自動補齊 t3Date 與 status
           appointments.value.forEach(a => {
             if (!a.t3Date) a.t3Date = getTMinus3Date(a.date);
@@ -10761,12 +10763,12 @@
         });
 
         const syncAppointmentCategorySummary = () => {
-          const items = newAppointmentForm.value.treatmentItems || [];
           const cats = newAppointmentForm.value.treatmentCategories || [];
-          if (items.length > 0) {
+          const items = newAppointmentForm.value.treatmentItems || [];
+          if (cats.length > 0) {
+            newAppointmentForm.value.category = cats.join(' / ');
+          } else if (items.length > 0) {
             newAppointmentForm.value.category = items.join(', ');
-          } else if (cats.length > 0) {
-            newAppointmentForm.value.category = cats.join(', ');
           }
         };
 
@@ -11505,6 +11507,19 @@
 
         const twoWeeksAgoStr = computed(() => getTwoWeeksAgoDate(clinicToday.value));
 
+        // 取得近三個月起始日期 (以基準日往前回推 3 個月)
+        const getThreeMonthsAgoDate = (baseDateStr) => {
+          const refBase = baseDateStr || clinicToday.value || '2026-09-12';
+          const [y, m, d] = refBase.split('-').map(Number);
+          const dt = new Date(y, m - 1 - 3, d);
+          const rY = dt.getFullYear();
+          const rM = String(dt.getMonth() + 1).padStart(2, '0');
+          const rD = String(dt.getDate()).padStart(2, '0');
+          return `${rY}-${rM}-${rD}`;
+        };
+
+        const threeMonthsAgoStr = computed(() => getThreeMonthsAgoDate(clinicToday.value));
+
         // ==============================================
         // 提示功能 I：近兩週到診病患後續預約提醒 (看診後提醒預約下次到診時間)
         // ==============================================
@@ -11569,13 +11584,13 @@
         });
 
         // ==============================================
-        // 提示功能 II：近兩週無法前來 / 未報到病患改約提醒
+        // 提示功能 II：近三個月無法前來 / 未報到病患改約提醒
         // ==============================================
         const todayRescheduleReminders = computed(() => {
           const todayStr = clinicToday.value;
-          const twoWeeksStr = getTwoWeeksAgoDate(todayStr);
+          const threeMonthsStr = getThreeMonthsAgoDate(todayStr);
           return appointments.value
-            .filter(app => app.date >= twoWeeksStr && app.date <= todayStr && (app.status === '未報到' || app.status === '未到'))
+            .filter(app => app.date >= threeMonthsStr && app.date <= todayStr && (app.status === '未報到' || app.status === '未到'))
             .map(app => {
               const patient = patients.value.find(p => (app.patientId && String(p.id) === String(app.patientId)) || (app.patientName && p.name === app.patientName)) || {};
               const chartNo = patient.chartNo || app.patientChartNo || app.chartNo || '';
@@ -12470,7 +12485,7 @@
             treatmentItems: [...defaultItems],
             customCategoryInput: '',
             customItemInput: '',
-            category: defaultItems.join(', '),
+            category: defaultCats.join(' / '),
             doctor: firstPatient ? firstPatient.doctor : (clinicDoctors.value[0]?.name || 'TE 醫師'),
             chair: firstPatient ? getDefaultChairForDoctor(firstPatient.doctor) : 'A診',
             date: selectedCalendarDate.value || clinicToday.value,
@@ -12479,6 +12494,59 @@
             notes: ''
           };
           showNewAppointmentModal.value = true;
+        };
+
+        // 取得病患總治療計畫顯示文字（連動「安排門診預約」裡的「治療項目」專科大類，非當日看診項目細項）
+        const getPatientConsultCategoryDisplay = (patient) => {
+          if (!patient) return '';
+          // 1. 優先從該病患關聯的預約紀錄中尋找最新有效的「治療項目」(treatmentCategories)
+          const patientApps = appointments.value.filter(a => 
+            (patient.id && String(a.patientId) === String(patient.id)) ||
+            (patient.name && a.patientName === patient.name)
+          );
+          for (let i = patientApps.length - 1; i >= 0; i--) {
+            const app = patientApps[i];
+            if (Array.isArray(app.treatmentCategories) && app.treatmentCategories.length > 0) {
+              return app.treatmentCategories.join(' / ');
+            }
+          }
+
+          const mapping = (systemSettings.value?.appointmentConfig?.treatmentItemsMapping) || DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping;
+
+          // 2. 檢查目前 patient.consultCategory：若含有細項字樣 (如 BT資料蒐集, EP矯正諮詢)，自動解析反推其所屬專科大類
+          if (patient.consultCategory) {
+            const curVal = String(patient.consultCategory).trim();
+            const matchedCats = new Set();
+            for (const [cat, subItems] of Object.entries(mapping)) {
+              if (subItems.some(sub => curVal.includes(sub))) {
+                matchedCats.add(cat);
+              }
+            }
+            if (matchedCats.size > 0) {
+              return Array.from(matchedCats).join(' / ');
+            }
+            return curVal;
+          }
+
+          // 3. 從病患約診之 procedure/treatmentItems 反推專科大類
+          for (let i = patientApps.length - 1; i >= 0; i--) {
+            const app = patientApps[i];
+            const proc = app.procedure || (Array.isArray(app.treatmentItems) ? app.treatmentItems.join(' ') : '') || '';
+            const matchedCats = new Set();
+            for (const [cat, subItems] of Object.entries(mapping)) {
+              if (subItems.some(sub => proc.includes(sub))) {
+                matchedCats.add(cat);
+              }
+            }
+            if (matchedCats.size > 0) {
+              return Array.from(matchedCats).join(' / ');
+            }
+            if (app.category) {
+              return app.category;
+            }
+          }
+
+          return patient.consultCategory || '一般門診';
         };
 
         const openNewAppointmentModalWithDate = (dateStr) => {
@@ -12608,7 +12676,7 @@
                 phone: rawPhone,
                 lineId: lineIdVal,
                 leadStatus: newAppointmentForm.value.newPatientLeadStatus || '治療中',
-                consultCategory: newAppointmentForm.value.category || '一般門診',
+                consultCategory: (newAppointmentForm.value.treatmentCategories?.length ? newAppointmentForm.value.treatmentCategories.join(' / ') : (newAppointmentForm.value.category || '一般門診')),
                 doctor: newAppointmentForm.value.doctor,
                 leadDoctors: leadDocVal,
                 caseManager: caseMgr,
@@ -12675,6 +12743,14 @@
           const procedureText = selectedItems.join(', ') || newAppointmentForm.value.procedure || '';
           const categorySummary = selectedCats.join(' / ') || newAppointmentForm.value.category || '一般門診';
           const assignedChair = newAppointmentForm.value.chair || getDefaultChairForDoctor(newAppointmentForm.value.doctor);
+
+          // 連動更新該病患之總治療計畫 (consultCategory) 為所選治療項目 (非當日看診項目)
+          if (targetPatientObj && selectedCats.length > 0) {
+            targetPatientObj.consultCategory = selectedCats.join(' / ');
+            if (selectedPatient.value && (selectedPatient.value.id === targetPatientObj.id || selectedPatient.value.name === targetPatientObj.name)) {
+              selectedPatient.value.consultCategory = selectedCats.join(' / ');
+            }
+          }
 
           // 建立約診排程 (保證帶有獨立唯一 ID 與正確的 patientId 連動，每一筆約診逐條獨立入曆)
           const newApp = {
@@ -14377,6 +14453,9 @@
           openReminderCenter,
           closeReminderCenter,
           twoWeeksAgoStr,
+          threeMonthsAgoStr,
+          getThreeMonthsAgoDate,
+          getPatientConsultCategoryDisplay,
           showToast,
           copyToastMessage,
           clinicToday,
