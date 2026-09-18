@@ -12005,11 +12005,11 @@
             .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
         };
 
-        // 取得特定病患的所有約診排程 (雙向連動，依看診時間近到遠遞增排序)
+        // 取得特定病患的所有約診排程 (雙向連動，依看診時間從越晚排在最上面、越近排在最下面降序排列)
         const getPatientAppointments = (patientId) => {
           return appointments.value
-            .filter(a => a.patientId === patientId)
-            .sort((a, b) => (a.date + ' ' + (a.time || '')).localeCompare(b.date + ' ' + (b.time || '')));
+            .filter(a => a.patientId === patientId || String(a.patientId) === String(patientId))
+            .sort((a, b) => (b.date + ' ' + (b.time || '')).localeCompare(a.date + ' ' + (a.time || '')));
         };
 
         // 病患名單依病歷號嚴格自然排序與唯一去重 (供約診選單等臨床場景使用)
