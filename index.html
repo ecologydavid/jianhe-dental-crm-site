@@ -10648,23 +10648,6 @@
             ensurePatientChartData(p);
           });
 
-          // 總治療計畫自動升級校正：若 consultCategory 儲存了處置細項 (如 BT資料蒐集, EP矯正諮詢)，自動轉為所屬專科治療項目大類 (如 Ortho)
-          const defaultMapping = (systemSettings.value?.appointmentConfig?.treatmentItemsMapping) || DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping;
-          patients.value.forEach(p => {
-            if (p.consultCategory) {
-              const curVal = String(p.consultCategory).trim();
-              const matchedCats = new Set();
-              for (const [cat, subItems] of Object.entries(defaultMapping)) {
-                if (subItems.some(sub => curVal.includes(sub))) {
-                  matchedCats.add(cat);
-                }
-              }
-              if (matchedCats.size > 0) {
-                p.consultCategory = Array.from(matchedCats).join(' / ');
-              }
-            }
-          });
-
           // 相容性防呆：自動補齊 t3Date 與 status
           appointments.value.forEach(a => {
             if (!a.t3Date) a.t3Date = getTMinus3Date(a.date);
@@ -12555,10 +12538,15 @@
           showNewAppointmentModal.value = true;
         };
 
-        // 取得病患總治療計畫顯示文字（連動「安排門診預約」裡的「治療項目」專科大類，非當日看診項目細項）
+        // 取得病患總治療計畫顯示文字（直接同步個案資料/編輯模式「總治療計畫/自費項目」，若未填寫則連動「安排門診預約」最新專科）
         const getPatientConsultCategoryDisplay = (patient) => {
           if (!patient) return '';
-          // 1. 優先從該病患關聯的預約紀錄中尋找最新有效的「治療項目」(treatmentCategories)
+          // 1. 優先直接同步個案資料/編輯模式中的「總治療計畫 / 自費項目」(consultCategory) 內容
+          if (patient.consultCategory && String(patient.consultCategory).trim()) {
+            return String(patient.consultCategory).trim();
+          }
+
+          // 2. 若病患尚未填寫總治療計畫，連動從預約紀錄中尋找最新有效的「治療項目」(treatmentCategories)
           const patientApps = appointments.value.filter(a => 
             (patient.id && String(a.patientId) === String(patient.id)) ||
             (patient.name && a.patientName === patient.name)
@@ -12571,21 +12559,6 @@
           }
 
           const mapping = (systemSettings.value?.appointmentConfig?.treatmentItemsMapping) || DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping;
-
-          // 2. 檢查目前 patient.consultCategory：若含有細項字樣 (如 BT資料蒐集, EP矯正諮詢)，自動解析反推其所屬專科大類
-          if (patient.consultCategory) {
-            const curVal = String(patient.consultCategory).trim();
-            const matchedCats = new Set();
-            for (const [cat, subItems] of Object.entries(mapping)) {
-              if (subItems.some(sub => curVal.includes(sub))) {
-                matchedCats.add(cat);
-              }
-            }
-            if (matchedCats.size > 0) {
-              return Array.from(matchedCats).join(' / ');
-            }
-            return curVal;
-          }
 
           // 3. 從病患約診之 procedure/treatmentItems 反推專科大類
           for (let i = patientApps.length - 1; i >= 0; i--) {
@@ -12605,7 +12578,7 @@
             }
           }
 
-          return patient.consultCategory || '一般門診';
+          return '一般諮詢';
         };
 
         const openNewAppointmentModalWithDate = (dateStr) => {
@@ -12803,8 +12776,8 @@
           const categorySummary = selectedCats.join(' / ') || newAppointmentForm.value.category || '一般門診';
           const assignedChair = newAppointmentForm.value.chair || getDefaultChairForDoctor(newAppointmentForm.value.doctor);
 
-          // 連動更新該病患之總治療計畫 (consultCategory) 為所選治療項目 (非當日看診項目)
-          if (targetPatientObj && selectedCats.length > 0) {
+          // 連動更新該病患之總治療計畫 (consultCategory) 為所選治療項目 (僅在尚未自訂總治療計畫時預設帶入)
+          if (targetPatientObj && (!targetPatientObj.consultCategory || !targetPatientObj.consultCategory.trim()) && selectedCats.length > 0) {
             targetPatientObj.consultCategory = selectedCats.join(' / ');
             if (selectedPatient.value && (selectedPatient.value.id === targetPatientObj.id || selectedPatient.value.name === targetPatientObj.name)) {
               selectedPatient.value.consultCategory = selectedCats.join(' / ');
@@ -13108,7 +13081,7 @@
             lineId: p.lineId || '',
             leadStatus: p.leadStatus || '已成交',
             pipelineStage: p.pipelineStage || '1. 初診諮詢',
-            consultCategory: p.consultCategory || '',
+            consultCategory: p.consultCategory || getPatientConsultCategoryDisplay(p) || '',
             doctor: p.doctor || 'TE 醫師',
             leadDoctors: parsedLeadDoctors,
             drugAllergiesInput: Array.isArray(p.drugAllergies) ? p.drugAllergies.join(', ') : '',
