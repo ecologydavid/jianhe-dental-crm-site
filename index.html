@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>或心設計有限公司 - 個案管理體系統</title>
+  <title>再過幾天就放假 - 個案管理體系統</title>
   <link rel="icon" type="image/png" href="logo.png" />
   <!-- 防閃跳遮罩：在 Vue 編譯掛載前，徹底隱藏所有未渲染的原始模板與彈窗 -->
   <style>
@@ -783,40 +783,32 @@
           <div 
             @click="isSidebarCollapsed = !isSidebarCollapsed"
             class="w-10 h-10 rounded-xl overflow-hidden shadow-xs flex-shrink-0 cursor-pointer hover:opacity-95 hover:scale-105 transition-all border border-slate-200/90 bg-[#F7F7F7] flex items-center justify-center relative group p-0.5"
-            :title="isSidebarCollapsed ? '點擊展開側邊欄' : '或心設計有限公司'"
+            :title="isSidebarCollapsed ? '點擊展開側邊欄' : '再過幾天就放假'"
           >
-            <!-- 專屬識別 LOGO 圖片 (re: 標誌) -->
+            <!-- 專屬識別 LOGO 圖片 -->
             <img 
               src="logo.png" 
-              alt="或心設計有限公司 LOGO" 
+              alt="再過幾天就放假 LOGO" 
               class="w-full h-full object-contain"
               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
             />
-            <!-- 向量高解析備援 SVG (re: 標誌) -->
+            <!-- 向量高解析備援 SVG (放假標誌) -->
             <div style="display: none;" class="w-full h-full flex items-center justify-center bg-[#F7F7F7]">
-              <svg class="w-8 h-8" viewBox="0 0 100 100" fill="none">
-                <circle cx="50" cy="50" r="38" stroke="#111827" stroke-width="4.5" stroke-dasharray="205 32" stroke-dashoffset="15" stroke-linecap="round" />
-                <circle cx="86" cy="50" r="3.5" fill="#111827" />
-                <text x="56" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="28" fill="#111827" text-anchor="middle">re</text>
-              </svg>
+              <span class="text-xs font-black text-slate-700">放假</span>
             </div>
           </div>
           <div v-show="!isSidebarCollapsed" class="min-w-0 overflow-hidden whitespace-nowrap">
-            <h1 class="font-black text-slate-900 text-sm leading-tight tracking-tight truncate" title="或心設計有限公司">
-              或心設計有限公司
+            <h1 class="font-black text-slate-900 text-sm leading-tight tracking-tight truncate" title="再過幾天就放假">
+              再過幾天就放假
             </h1>
             <div class="flex items-center gap-1.5 mt-0.5">
               <p class="text-[10px] text-emerald-700 font-extrabold tracking-wide truncate">個案管理體系統</p>
               <button 
                 @click="currentTab = 'subscription'"
-                class="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-95 text-white rounded-full text-[9px] font-black tracking-wider transition-transform hover:scale-105 cursor-pointer shadow-2xs"
-                title="點擊前往方案訂閱與收費中心"
+                class="inline-flex items-center gap-1 px-2 py-0.5 bg-sky-100 hover:bg-sky-200 text-sky-700 border border-sky-300 rounded-full text-[9px] font-black tracking-wider transition-transform hover:scale-105 cursor-pointer shadow-2xs"
+                title="撐一下zZ"
               >
-                <svg class="w-2.5 h-2.5 text-yellow-300 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l2.4 7.2h7.6l-6.1 4.5 2.3 7.3-6.2-4.6-6.2 4.6 2.3-7.3-6.1-4.5h7.6z"/>
-                </svg>
-                <span>訂閱</span>
-                <span class="px-1 py-0.1 bg-white/25 rounded text-[8px] font-mono font-black">PRO</span>
+                <span>撐一下zZ</span>
               </button>
             </div>
           </div>
@@ -3657,7 +3649,7 @@
           <div class="p-3.5 bg-teal-50/80 border border-teal-200 rounded-xl space-y-3 text-xs">
             <div class="flex items-center justify-between pb-2 border-b border-teal-200/60">
               <span class="font-extrabold text-teal-900 flex items-center gap-1.5">
-                <span>📋</span> 治療內容與跨專科主責團隊修改
+                <span>📋</span> 治療內容與跨專科主責醫師順序修改
               </span>
             </div>
 
@@ -3679,13 +3671,46 @@
                 </select>
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block text-slate-700 font-bold mb-1">主責團隊順序</label>
-                <input 
-                  type="text" 
-                  v-model="editPatientForm.leadDoctors" 
-                  class="w-full p-2 bg-white border border-slate-300 rounded-lg focus:border-brand-500 outline-none font-medium" 
-                  placeholder="例：TE, 銘, 欣" 
-                />
+                <label class="block text-slate-700 font-bold mb-1">主責醫師順序 (跨專科)</label>
+                <div class="relative">
+                  <button 
+                    type="button" 
+                    @click.stop="isEditPatientLeadDoctorsPickerOpen = !isEditPatientLeadDoctorsPickerOpen"
+                    class="w-full p-2 bg-white border border-slate-300 rounded-lg text-left text-xs font-bold flex items-center justify-between hover:border-brand-500 focus:outline-none focus:border-brand-500 cursor-pointer min-h-[38px]"
+                  >
+                    <span class="truncate" :class="(editPatientForm.leadDoctors && editPatientForm.leadDoctors.length) ? 'text-slate-800' : 'text-slate-400 font-normal'">
+                      {{ (editPatientForm.leadDoctors && editPatientForm.leadDoctors.length) ? (Array.isArray(editPatientForm.leadDoctors) ? editPatientForm.leadDoctors.join(', ') : editPatientForm.leadDoctors) : '---' }}
+                    </span>
+                    <span class="text-slate-400 text-[10px] ml-1 flex-shrink-0">▼</span>
+                  </button>
+
+                  <!-- 懸浮複選下拉面板 (同步後台看診醫師，依點選順序指派) -->
+                  <div 
+                    v-if="isEditPatientLeadDoctorsPickerOpen" 
+                    class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl p-2 z-50 space-y-1 max-h-56 overflow-y-auto"
+                    @click.stop
+                  >
+                    <div class="text-[10px] text-slate-400 font-bold px-1 pb-1 border-b border-slate-100 flex items-center justify-between">
+                      <span>依點選順序指派順位</span>
+                      <button type="button" @click="editPatientForm.leadDoctors = []" class="text-rose-500 hover:underline">清空</button>
+                    </div>
+                    <div 
+                      v-for="doc in clinicDoctors" 
+                      :key="doc.id"
+                      @click="toggleEditPatientLeadDoctor(doc.name)"
+                      class="px-2 py-1.5 rounded-lg hover:bg-slate-50 flex items-center justify-between cursor-pointer text-xs transition-colors"
+                      :class="isEditPatientLeadDoctorSelected(doc.name) ? 'bg-teal-50 text-teal-800 font-bold' : 'text-slate-700'"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: doc.color || '#0d9488' }"></span>
+                        <span>{{ doc.name }}</span>
+                      </div>
+                      <span v-if="isEditPatientLeadDoctorSelected(doc.name)" class="text-[11px] font-bold text-teal-600">
+                        ✓ 第 {{ getEditPatientLeadDoctorIndex(doc.name) }} 順位
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -8364,7 +8389,7 @@
                     v-model="systemSettings.clinic.name" 
                     @change="saveSystemSettings"
                     class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 outline-none text-slate-800 dark:text-white font-bold" 
-                    placeholder="或心設計有限公司"
+                    placeholder="再過幾天就放假"
                   />
                 </div>
                 <div>
@@ -9550,7 +9575,7 @@
             kanbanFilterBar: true
           },
           clinic: {
-            name: '或心設計有限公司',
+            name: '再過幾天就放假',
             phone: '02-2345-6789',
             address: '台北市大安區忠孝東路四段 100 號 8 樓',
             coordinatorName: '螺絲小姐',
@@ -9864,7 +9889,7 @@
           { token: '{category}', label: '療程專科', example: '人工植牙' },
           { token: '{medicalAlerts}', label: '過敏/疾病警示', example: '⚠️ 術前特別注意事項...' },
           { token: '{t3Date}', label: 'T-3 提醒日', example: '2026-09-08' },
-          { token: '{clinicName}', label: '診所名稱', example: '或心設計有限公司' },
+          { token: '{clinicName}', label: '診所名稱', example: '再過幾天就放假' },
           { token: '{coordinatorName}', label: '個管師名稱', example: '螺絲小姐' },
           { token: '{clinicPhone}', label: '診所電話', example: '02-2345-6789' },
           { token: '{clinicAddress}', label: '診所地址', example: '台北市大安區忠孝東路四段 100 號 8 樓' }
@@ -10660,7 +10685,7 @@
 
         const exportData = () => {
           const exportObj = {
-            system: '或心設計有限公司 - 個案管理體系統',
+            system: '再過幾天就放假 - 個案管理體系統',
             version: 'v11_dental_chart_dashboard',
             appointments: appointments.value,
             patients: patients.value,
@@ -10735,6 +10760,34 @@
         const getLeadDoctorIndex = (docName) => {
           if (!Array.isArray(newAppointmentForm.value.newPatientLeadDoctors)) return '';
           const idx = newAppointmentForm.value.newPatientLeadDoctors.indexOf(docName);
+          return idx >= 0 ? idx + 1 : '';
+        };
+
+        // 個案資料管理編輯模式：主責醫師順序 (跨專科) 複選器狀態與操作
+        const isEditPatientLeadDoctorsPickerOpen = ref(false);
+
+        const toggleEditPatientLeadDoctor = (docName) => {
+          if (!Array.isArray(editPatientForm.value.leadDoctors)) {
+            editPatientForm.value.leadDoctors = editPatientForm.value.leadDoctors 
+              ? [editPatientForm.value.leadDoctors] 
+              : [];
+          }
+          const idx = editPatientForm.value.leadDoctors.indexOf(docName);
+          if (idx >= 0) {
+            editPatientForm.value.leadDoctors.splice(idx, 1);
+          } else {
+            editPatientForm.value.leadDoctors.push(docName);
+          }
+        };
+
+        const isEditPatientLeadDoctorSelected = (docName) => {
+          if (!Array.isArray(editPatientForm.value.leadDoctors)) return false;
+          return editPatientForm.value.leadDoctors.includes(docName);
+        };
+
+        const getEditPatientLeadDoctorIndex = (docName) => {
+          if (!Array.isArray(editPatientForm.value.leadDoctors)) return '';
+          const idx = editPatientForm.value.leadDoctors.indexOf(docName);
           return idx >= 0 ? idx + 1 : '';
         };
 
@@ -11471,7 +11524,13 @@
         const todayT3Reminders = computed(() => allT3Reminders.value.filter(r => r.stage === 'today'));
         const overdueT3Reminders = computed(() => allT3Reminders.value.filter(r => r.stage === 'overdue' && !r.reminderDone));
         const upcomingT3Reminders = computed(() => allT3Reminders.value.filter(r => r.stage === 'upcoming'));
-        const doneT3Reminders = computed(() => allT3Reminders.value.filter(r => r.reminderDone));
+        // 已發送清單：依預定看診時間排序，距離時間越遠（越晚）的往上排列，距離時間越近（越早）的排在越下面
+        const doneT3Reminders = computed(() => {
+          return allT3Reminders.value
+            .filter(r => r.reminderDone)
+            .slice()
+            .sort((a, b) => (b.date + ' ' + (b.time || '')).localeCompare(a.date + ' ' + (a.time || '')));
+        });
 
         // 待處理名單：真正到達提醒啟動日（今日或逾期未發）且尚未標記完成的項目
         const pendingT3Reminders = computed(() => allT3Reminders.value.filter(r => (r.stage === 'today' || r.stage === 'overdue') && !r.reminderDone));
@@ -13018,6 +13077,7 @@
         const closePatientDrawer = () => {
           selectedPatient.value = null;
           isEditingPatient.value = false;
+          isEditPatientLeadDoctorsPickerOpen.value = false;
           selectedTooth.value = null;
           patientDrawerTab.value = 'overview';
         };
@@ -13027,6 +13087,18 @@
           const p = selectedPatient.value;
           const autoAge = calculateAgeFromChartNo(p.chartNo);
           const computedAge = (autoAge !== null && autoAge >= 0) ? autoAge : (p.age !== undefined ? p.age : 35);
+
+          let parsedLeadDoctors = [];
+          const rawLead = p.leadDoctors || (p.doctor ? p.doctor : '');
+          if (Array.isArray(rawLead)) {
+            parsedLeadDoctors = [...rawLead];
+          } else if (typeof rawLead === 'string' && rawLead.trim()) {
+            parsedLeadDoctors = rawLead.split(/[,，、]+/).map(s => s.trim()).filter(Boolean).map(name => {
+              const match = clinicDoctors.value.find(d => d.name === name || d.name.replace(' 醫師', '') === name);
+              return match ? match.name : (name.endsWith('醫師') ? name : name + ' 醫師');
+            });
+          }
+
           editPatientForm.value = {
             name: p.name || '',
             chartNo: p.chartNo || '',
@@ -13038,7 +13110,7 @@
             pipelineStage: p.pipelineStage || '1. 初診諮詢',
             consultCategory: p.consultCategory || '',
             doctor: p.doctor || 'TE 醫師',
-            leadDoctors: p.leadDoctors || (p.doctor ? p.doctor.replace(' 醫師', '') : 'TE'),
+            leadDoctors: parsedLeadDoctors,
             drugAllergiesInput: Array.isArray(p.drugAllergies) ? p.drugAllergies.join(', ') : '',
             systemicDiseasesInput: Array.isArray(p.systemicDiseases) ? p.systemicDiseases.join(', ') : '',
             medicalAlertsInput: Array.isArray(p.medicalAlerts) ? p.medicalAlerts.join(', ') : '',
@@ -13046,6 +13118,7 @@
             chiefComplaint: p.chiefComplaint || '',
             projectTotal: p.projectTotal || 0
           };
+          isEditPatientLeadDoctorsPickerOpen.value = false;
           isEditingPatient.value = true;
         };
 
@@ -13058,6 +13131,7 @@
 
         const cancelEditingPatient = () => {
           isEditingPatient.value = false;
+          isEditPatientLeadDoctorsPickerOpen.value = false;
         };
 
         const savePatientEdits = () => {
@@ -13088,6 +13162,12 @@
             const resolvedAge = (editPatientForm.value.age !== undefined && editPatientForm.value.age !== null && editPatientForm.value.age !== '')
               ? Number(editPatientForm.value.age)
               : (autoAge !== null ? autoAge : (oldP.age || 0));
+
+            const savedLeadDoctors = Array.isArray(editPatientForm.value.leadDoctors)
+              ? editPatientForm.value.leadDoctors.join(', ')
+              : (editPatientForm.value.leadDoctors || '').trim();
+            const fallbackDoctor = editPatientForm.value.doctor || (clinicDoctors.value[0]?.name || 'TE 醫師');
+
             const updatedP = {
               ...oldP,
               name: rawName,
@@ -13100,7 +13180,7 @@
               pipelineStage: editPatientForm.value.pipelineStage,
               consultCategory: (editPatientForm.value.consultCategory || '').trim(),
               doctor: editPatientForm.value.doctor,
-              leadDoctors: (editPatientForm.value.leadDoctors || '').trim() || editPatientForm.value.doctor.replace(' 醫師', ''),
+              leadDoctors: savedLeadDoctors || fallbackDoctor,
               specialNotes: (editPatientForm.value.specialNotes || '').trim(),
               chiefComplaint: (editPatientForm.value.chiefComplaint || '').trim(),
               projectTotal: Number(editPatientForm.value.projectTotal) || 0,
@@ -13122,6 +13202,7 @@
             });
 
             saveToStorage();
+            isEditPatientLeadDoctorsPickerOpen.value = false;
             isEditingPatient.value = false;
 
             copyToastMessage.value = `✅ 已成功更新【${updatedP.name}】的病患基本資料與治療內容！`;
@@ -14655,6 +14736,10 @@
           toggleLeadDoctor,
           isLeadDoctorSelected,
           getLeadDoctorIndex,
+          isEditPatientLeadDoctorsPickerOpen,
+          toggleEditPatientLeadDoctor,
+          isEditPatientLeadDoctorSelected,
+          getEditPatientLeadDoctorIndex,
           getAppTreatmentItemsText,
           availableSurgeryOptions,
           toggleFollowupTreatment,
