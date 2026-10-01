@@ -1,91 +1,106 @@
-/* An oversized orange companion, with the unlock controls always reachable. */
-body:has(.keeper-lock-screen) {
-  overflow: hidden !important;
+/* Lock-screen cat room. Pencil cats are drawn by cat-scenes.js; decorative only, no app data. */
+.cat-ink-defs{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+.diary-cat{--cat-coat:#f4efe3;--cat-mark:#c49b65;--cat-second:#87877d;--cat-ink:#80796b;display:block;overflow:visible;pointer-events:none}
+.diary-cat.coat-grey{--cat-coat:#edece6;--cat-mark:#8d9690;--cat-second:#7b817b}
+.diary-cat.coat-calico{--cat-coat:#fbf6e9;--cat-mark:#c69a67;--cat-second:#838984}
+.pencil-lines{filter:url('#cat-pencil')}
+.cat-outline{fill:var(--cat-coat);stroke:var(--cat-ink);stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+.cat-patch{fill:var(--cat-mark);opacity:.5;stroke:none}
+.second-patch{fill:var(--cat-second);opacity:.4}
+.cat-stripes{stroke:var(--cat-mark);stroke-width:3;stroke-linecap:round;opacity:.65;fill:none}
+.cat-pencil-detail{stroke:var(--cat-ink);stroke-width:.8;opacity:.65;stroke-linecap:round;fill:none}
+.cat-face,.cat-eyes{stroke:var(--cat-ink);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.cat-nose{fill:#ba958a;stroke:var(--cat-ink);stroke-width:.65}
+.cat-ear{fill:#d8b8a5;stroke:none;opacity:.55}
+.cat-eyes{transform-box:fill-box;transform-origin:center;animation:cat-blink 9s ease-in-out infinite}
+.sleeping-body{transform-origin:105px 137px;animation:cat-sleep 6.8s ease-in-out infinite}
+.climbing-tail{transform-origin:61px 177px;animation:cat-curious-tail 8s ease-in-out infinite}
+.sitting-tail{transform-origin:132px 131px;animation:cat-curious-tail 9s ease-in-out infinite}
+.far-leg{opacity:.7}
+@keyframes cat-blink{0%,44%,47%,100%{transform:scaleY(1)}45%,46%{transform:scaleY(.1)}}
+@keyframes cat-sleep{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.025)}}
+@keyframes cat-curious-tail{0%,65%,100%{transform:rotate(0)}73%{transform:rotate(-8deg)}82%{transform:rotate(5deg)}91%{transform:rotate(-3deg)}}
+.dark .diary-cat{--cat-coat:#d4d3bd;--cat-ink:#918f7c}
+.dark .diary-cat.coat-grey{--cat-coat:#afb7a8}
+.dark .diary-cat.coat-calico{--cat-coat:#ddd9c2}
+body:has(.keeper-lock-screen){overflow:hidden!important}
+.keeper-lock-screen{position:fixed;inset:0;z-index:99999;isolation:isolate;width:100%;height:100dvh;overflow:auto;background:rgb(var(--white));color:rgb(var(--n-900))}
+.keeper-lock-screen *{box-sizing:border-box}
+.keeper-layout{min-height:100%;max-width:1180px;margin:0 auto;padding:74px 56px 48px;display:grid;grid-template-columns:minmax(280px,.83fr) minmax(340px,1.3fr);grid-template-rows:1fr auto;gap:28px;align-items:center}
+.keeper-content{position:relative;z-index:3;padding-bottom:50px}
+.keeper-caption h2{font-size:clamp(27px,3.2vw,38px);font-weight:600;line-height:1.65;letter-spacing:.035em}
+.keeper-caption p{font-size:14px;line-height:1.9;color:rgb(var(--n-600));margin-top:18px;max-width:27ch}
+.keeper-lock-screen .keeper-unlock-card{position:relative;width:100%;max-width:330px;margin-top:38px;padding:24px 0 0;border:0;border-top:1px solid rgb(var(--n-300));background:transparent;box-shadow:none;transform:none}
+.keeper-unlock-card h3{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:500}
+.keeper-unlock-card h3 svg{width:15px;height:15px}
+.keeper-unlock-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:13px}
+.keeper-lock-screen .keeper-unlock-row input{height:46px;min-width:0;background:rgb(var(--white))}
+.keeper-lock-screen .keeper-unlock-row .btn{min-height:46px;padding-inline:20px}
+.keeper-unlock-card .unlock-feedback{min-height:23px;margin-top:8px}
+.keeper-lock-screen .keeper-unlock-card.animate-lock-shake{animation:keeper-shake .35s ease-in-out}
+@keyframes keeper-shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
+.keeper-play-space{min-width:0;position:relative;align-self:center}
+.keeper-play-space::before{content:'';position:absolute;inset:14% 0 2% 0;background:rgb(var(--n-100));border-radius:47% 53% 38% 62%/50% 40% 60% 50%;transform:rotate(-3deg)}
+.cat-playground{display:block;width:100%;height:auto;position:relative;overflow:visible}
+.keeper-room-note{position:relative;text-align:center;color:rgb(var(--n-600));font-size:13px;letter-spacing:.08em;margin-top:6px}
+.keeper-room-note span{display:inline-block;width:26px;border-bottom:1px solid rgb(var(--n-300));vertical-align:middle;margin:0 10px}
+.keeper-motion-control{position:absolute;top:25px;right:32px;z-index:4}
+.keeper-motion-control svg{width:14px;height:14px}
+.keeper-footer{grid-column:1/-1;align-self:end;text-align:center;color:rgb(var(--n-600));font-size:13px;letter-spacing:.04em}
+.room-lines,.basket-cord{stroke:#aaa48d;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.room-wash{fill:#d8e1d2;opacity:.34;stroke:none}.curtain{fill:#ece7d9;stroke:#b2ac98;stroke-width:1}
+.sun-disc{fill:#e6ce86;opacity:.5;stroke:none}.pencil-faint{opacity:.52;stroke-width:.9}
+.plant-stem{stroke:#8b987d}.plant-leaf{fill:#b2bda0;stroke:#8b987d;stroke-width:.8}
+.room-book{fill:#d5dcc9;stroke:#a4ad95}.rug{fill:#e7ddc9;fill-opacity:.32;stroke:#b4ab97;stroke-width:.8}
+.basket-swing{transform-origin:178px 14px;animation:basket-sway 12s ease-in-out infinite}
+.basket-back{fill:#d9c08d;fill-opacity:.3;stroke:#af9871;stroke-width:1.2}
+.basket-front{fill:#d4bd8e;stroke:#a89674;stroke-width:1.1}
+.basket-weave{fill:none;stroke:#a08d68;stroke-width:.8;opacity:.65}
+.runner-track{transform:translate(75px,308px);animation:cat-chase-path 18s linear infinite,cat-gait-state 18s step-end infinite}
+.runner-track.runner-grey{animation-delay:-16.8s;--lane-x:-45px;--lane-y:13px}
+.runner-facing{transform-box:fill-box;transform-origin:center;animation:cat-turn 18s linear infinite}
+.runner-grey .runner-facing{animation-delay:-16.8s}
+.cat-moving .cat-leg{animation:cat-leg-step .48s ease-in-out infinite alternate;transform-origin:0 0;animation-play-state:var(--gait-play,running)}
+.cat-moving .cat-leg.front{animation-delay:-.48s}.cat-moving .cat-leg.far-leg{animation-direction:alternate-reverse}
+.cat-moving .cat-gait{animation:cat-gait-bob .48s ease-in-out infinite;animation-play-state:var(--gait-play,running)}
+.cat-moving .walking-tail{animation:running-tail .96s ease-in-out infinite alternate;transform-origin:0 0}
+.play-yarn{transform:translate(385px,397px);animation:yarn-roll 18s linear infinite;fill:#c8aa7c;stroke:#9e8664;stroke-width:1}
+.play-yarn path{fill:none;stroke:#f6ebd7;stroke-width:.9}
+.room-butterfly{transform:translate(287px,231px);animation:butterfly-drift 18s ease-in-out infinite;fill:#c9bca3;stroke:#a99b82;stroke-width:.8}
+.cats-paused :is(.runner-track,.runner-facing,.cat-leg,.cat-gait,.cat-tail,.cat-eyes,.sleeping-body,.basket-swing,.play-yarn,.room-butterfly){animation-play-state:paused!important}
+@keyframes cat-leg-step{from{transform:rotate(-25deg)}to{transform:rotate(24deg)}}
+@keyframes cat-gait-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes running-tail{from{transform:rotate(-5deg)}to{transform:rotate(9deg)}}
+@keyframes basket-sway{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.4deg)}}
+@keyframes cat-chase-path{
+ 0%{transform:translate(calc(55px + var(--lane-x, 0px)),calc(308px + var(--lane-y, 0px)))}18%{transform:translate(calc(299px + var(--lane-x, 0px)),calc(308px + var(--lane-y, 0px)))}
+ 22%{transform:translate(calc(339px + var(--lane-x, 0px)),calc(276px + var(--lane-y, 0px)))}26%{transform:translate(calc(374px + var(--lane-x, 0px)),calc(308px + var(--lane-y, 0px)))}
+ 36%,43%{transform:translate(calc(404px + var(--lane-x, 0px)),calc(308px + var(--lane-y, 0px)))}
+ 62%{transform:translate(calc(172px + var(--lane-x, 0px)),calc(308px + var(--lane-y, 0px)))}67%{transform:translate(calc(110px + var(--lane-x, 0px)),calc(283px + var(--lane-y, 0px)))}
+ 72%,100%{transform:translate(calc(55px + var(--lane-x, 0px)),calc(308px + var(--lane-y, 0px)))}
+}
+@keyframes cat-gait-state{0%,34.99%{--gait-play:running}35%,43%{--gait-play:paused}43.01%,71.99%{--gait-play:running}72%,100%{--gait-play:paused}}
+@keyframes cat-turn{0%,35%{transform:scaleX(1)}36%,74%{transform:scaleX(-1)}75%,100%{transform:scaleX(1)}}
+@keyframes yarn-roll{0%{transform:translate(355px,397px) rotate(0)}35%,43%{transform:translate(557px,397px) rotate(220deg)}72%,100%{transform:translate(135px,397px) rotate(-280deg)}}
+@keyframes butterfly-drift{0%,100%{transform:translate(285px,231px) rotate(-12deg)}25%{transform:translate(306px,214px) rotate(12deg)}50%{transform:translate(296px,239px) rotate(-9deg)}75%{transform:translate(280px,224px) rotate(8deg)}}
+.dark .room-lines,.dark .basket-cord{stroke:#858d77}.dark .room-wash{opacity:.12}
+.dark .curtain{fill:#58614e;stroke:#858d77}.dark .rug{fill:#b4b594;fill-opacity:.1}
+@media(max-width:760px){
+ .keeper-layout{grid-template-columns:1fr;grid-template-rows:auto;gap:6px;padding:76px 24px 28px;align-content:start}
+ .keeper-content{padding-bottom:0;max-width:400px;width:100%;margin-inline:auto}
+ .keeper-caption h2{font-size:28px}.keeper-caption p{max-width:none;margin-top:12px}
+ .keeper-lock-screen .keeper-unlock-card{margin-top:25px;max-width:none;padding-top:18px}
+ .keeper-play-space{width:100%;max-width:460px;margin:10px auto 0}
+ .keeper-room-note{font-size:12px;margin-top:-8px}.keeper-motion-control{top:18px;right:20px}
+ .keeper-footer{margin-top:25px}
+}
+@media(min-width:761px) and (max-height:620px){
+ .keeper-layout{padding-top:64px;padding-bottom:24px}.keeper-content{padding-bottom:0}
+ .keeper-caption h2{font-size:28px}.keeper-lock-screen .keeper-unlock-card{margin-top:22px}
+}
+@media(prefers-reduced-motion:reduce){
+ .keeper-motion-control{display:none}.runner-ginger{transform:translate(325px,308px)}
+ .runner-grey{transform:translate(165px,320px)}.keeper-lock-screen *,.keeper-unlock-card.animate-lock-shake{animation:none!important}
+ .diary-cat *,.basket-swing,.runner-track,.runner-facing,.play-yarn,.room-butterfly{animation:none!important}
 }
 
-.keeper-lock-screen {
-  position: fixed; inset: 0; z-index: 99999; isolation: isolate;
-  overflow: hidden; width: 100vw; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; color: #fff5e7;
-  background: rgba(15, 19, 24, .96); backdrop-filter: blur(22px);
-  /* 🐱 趣味逗貓棒鼠標游標 (Cat Teaser Wand Cursor - 尺寸加大升級版，更契合大橘貓身型) */
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g transform='rotate(-12 32 32)'><path d='M58 60 L28 30' stroke='%23f59e0b' stroke-width='4.5' stroke-linecap='round'/><path d='M58 60 L46 48' stroke='%23b45309' stroke-width='4.5' stroke-linecap='round'/><path d='M28 30 L18 20' stroke='%23fef08a' stroke-width='2.2' stroke-linecap='round'/><circle cx='18' cy='20' r='4' fill='%23fbbf24' stroke='%23d97706' stroke-width='1'/><circle cx='17' cy='19' r='1.2' fill='%23ffffff'/><path d='M18 20 Q12 11 6 4 Q13 13 18 20' fill='%2310b981'/><path d='M18 20 Q10 8 3 9 Q6 17 18 20' fill='%23f43f5e'/><path d='M18 20 Q6 15 2 25 Q11 25 18 20' fill='%2306b6d4'/><path d='M18 20 Q13 28 7 35 Q17 29 18 20' fill='%23a855f7'/><circle cx='18' cy='20' r='1.5' fill='%23ffffff' opacity='0.85'/></g></svg>") 6 6, auto;
-}
-.keeper-lock-screen * {
-  box-sizing: border-box;
-}
-.keeper-lock-screen input {
-  cursor: text !important;
-}
-.keeper-lock-screen button {
-  cursor: pointer !important;
-}
-.keeper-lock-screen::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse at 72% 80%, #bc702330, transparent 58%);
-}
-.keeper-caption { position: absolute; left: 7vw; top: 7vh; z-index: 2; pointer-events: none; }
-.keeper-caption small { display: block; color: #d5b591; font-size: 11px; letter-spacing: .24em; }
-.keeper-caption h2 { margin-top: 12px; font-size: clamp(23px, 3vw, 42px); font-weight: 800; letter-spacing: -.04em; }
-.keeper-caption p { margin-top: 10px; color: #a9a39b; font-size: 13px; }
-.keeper-cat-stage {
-  position: absolute; right: -5vw; bottom: 0; width: min(78vw, 1100px);
-  height: 95dvh; max-height: 100vh; pointer-events: none; z-index: 1;
-  overflow: visible;
-  animation: keeper-arrive 2.4s cubic-bezier(.22,.66,.25,1) both;
-}
-.keeper-cat-stage::after {
-  content: ''; position: absolute; left: 20%; right: 12%; bottom: 3%; height: 5%;
-  border-radius: 50%; background: #0009; filter: blur(22px); z-index: -1;
-}
-.keeper-cat {
-  width: 100%; height: 100%; object-fit: contain; object-position: center bottom;
-  transform-origin: 54% 94%; filter: drop-shadow(-18px 12px 22px #0005);
-  animation: keeper-breathe 5s ease-in-out 2.4s infinite;
-}
-@keyframes keeper-arrive {
-  0% { transform: translateX(105%) rotate(7deg); }
-  22% { transform: translateX(76%) translateY(-8px) rotate(-3deg); }
-  45% { transform: translateX(47%) rotate(3deg); }
-  66% { transform: translateX(19%) translateY(-6px) rotate(-2deg); }
-  86% { transform: translateX(-2%) scaleY(1.02); }
-  94% { transform: translateX(0) scaleY(.98); }
-  100% { transform: translateX(0) scaleY(1); }
-}
-@keyframes keeper-breathe {
-  0%, 100% { transform: scale(1) rotate(0); }
-  50% { transform: scale(1.012,1.018) rotate(-.4deg); }
-}
-.keeper-lock-screen .keeper-unlock-card {
-  position: absolute; z-index: 3; left: 7vw; top: 50%; transform: translateY(-28%);
-  margin: 0; width: 300px; max-width: calc(100% - 40px);
-  background: rgba(28, 31, 35, .94); border-color: #ffffff20;
-  box-shadow: 0 20px 65px #0004;
-}
-.keeper-lock-screen .keeper-unlock-card.animate-lock-shake { animation: keeper-shake .35s ease-in-out; }
-@keyframes keeper-shake {
-  0%, 100% { transform: translateY(-28%) translateX(0); }
-  25%, 75% { transform: translateY(-28%) translateX(-6px); }
-  50% { transform: translateY(-28%) translateX(6px); }
-}
-@media (max-width: 700px) {
-  .keeper-lock-screen { min-height: 100dvh; }
-  .keeper-caption { left: 24px; top: 28px; right: 24px; }
-  .keeper-caption h2 { font-size: 26px; }
-  .keeper-cat-stage { top: 105px; bottom: auto; right: -10%; width: 95%; height: 53dvh; }
-  .keeper-lock-screen .keeper-unlock-card {
-    left: 20px; top: max(350px, 54dvh); width: calc(100% - 40px); max-width: none;
-    transform: none; margin-bottom: 24px; padding: 18px;
-  }
-  @keyframes keeper-shake {
-    0%, 100% { transform: translateX(0); }
-    25%, 75% { transform: translateX(-6px); }
-    50% { transform: translateX(6px); }
-  }
-}
-@media (min-width: 701px) and (max-height: 650px) {
-  .keeper-caption { top: 24px; }
-  .keeper-lock-screen .keeper-unlock-card { top: 145px; transform: none; margin-bottom: 24px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .keeper-cat-stage, .keeper-cat, .keeper-lock-screen .keeper-unlock-card.animate-lock-shake { animation: none; }
-}
