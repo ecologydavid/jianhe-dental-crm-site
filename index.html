@@ -18,12 +18,13 @@
       }
     } catch (e) {}
   </script>
+  <!-- 外部套件固定版本，升級時請改版號並重新測試（2026-10-31 固定為當時正式網站載入的版本） -->
   <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <!-- Vue 3 CDN -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
   <!-- Supabase 雲端資料庫 SDK CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
   <script src="cloud-sync.js"></script>
   <script src="app-config.js"></script>
   <script src="cat-scenes.js"></script>
@@ -781,7 +782,7 @@
                 <span class="eyebrow">技工件</span>
                 <button type="button" @click="currentTab = 'lab'" class="text-[13px] text-blue-700 hover:underline underline-offset-4">全部</button>
               </div>
-              <div class="mt-1 flex items-baseline gap-1.5"><span class="num text-[28px] leading-tight font-semibold text-slate-900">{{ urgentLabOrders.length }}</span><span class="text-[13px] text-slate-500">件製作中</span></div>
+              <div class="mt-1 flex items-baseline gap-1.5"><span class="num text-[28px] leading-tight font-semibold text-slate-900">{{ urgentLabOrders.length }}</span><span class="text-[13px] text-slate-500">件尚未到件</span></div>
               <p class="mt-3 text-[13px]" :class="labChaseOrders.length > 0 ? 'text-rose-700' : 'text-slate-500'">
                 {{ labChaseOrders.length > 0 ? `${labChaseOrders.length} 件裝牙日將到、尚未回件` : '沒有需要催件的工件' }}
               </p>
@@ -1359,7 +1360,7 @@
         <div v-if="currentTab === 'lab'" class="space-y-3">
           <div class="flex flex-wrap items-center gap-2">
             <p class="text-[13px] text-slate-500">
-              製作中 <span class="num text-slate-900">{{ urgentLabOrders.length }}</span> 件
+              未到件 <span class="num text-slate-900">{{ urgentLabOrders.length }}</span> 件
               <template v-if="labChaseOrders.length > 0"> · <span class="text-rose-700">需催件 <span class="num">{{ labChaseOrders.length }}</span> 件</span></template>
             </p>
             <div class="flex-1"></div>
@@ -1405,17 +1406,19 @@
                     <td class="num text-slate-900 whitespace-nowrap">{{ order.appointmentDate || '—' }}</td>
                     <td>
                       <select v-model="order.status" @change="saveToStorage" class="field field-sm w-auto cursor-pointer" :class="getLabStatusBadgeClass(order.status)" aria-label="工件狀態">
+                        <option value="已送達待製作">已送達待製作</option>
                         <option value="製作中">製作中</option>
                         <option value="已送達診所待驗收">已送達待驗收</option>
                         <option value="驗收完成">驗收完成</option>
-                        <option value="試戴已裝固">試戴已裝固</option>
                         <option value="需退回重做">需退回重做</option>
+                        <!-- 「試戴已裝固」已停用，只在舊工單仍是這個狀態時顯示，避免選單變空白 -->
+                        <option v-if="order.status === '試戴已裝固'" value="試戴已裝固" disabled>試戴已裝固（已停用）</option>
                       </select>
                     </td>
                     <td class="num text-right text-slate-700 whitespace-nowrap">${{ formatMoney(order.cost) }}</td>
                     <td class="text-right whitespace-nowrap">
                       <div class="flex items-center justify-end gap-1">
-                        <button v-if="order.status === '製作中'" type="button" @click="markLabDelivered(order.id)" class="btn btn-secondary btn-sm mr-1">簽收到件</button>
+                        <button v-if="isLabNotArrived(order)" type="button" @click="markLabDelivered(order.id)" class="btn btn-secondary btn-sm mr-1">簽收到件</button>
                         <button type="button" @click="openEditLabModal(order)" class="btn btn-ghost btn-sm btn-icon" :title="`編輯工單 ${order.orderNo}`" aria-label="編輯工單">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                         </button>
@@ -1713,12 +1716,10 @@
                 <span class="field-label">總治療計畫 / 自費項目 <span class="text-rose-600">*</span></span>
                 <input type="text" v-model="editPatientForm.consultCategory" required class="field" placeholder="例：植牙、牙周、SR" />
               </label>
-              <label class="block">
+              <div class="block">
                 <span class="field-label">主治醫師 <span class="text-rose-600">*</span></span>
-                <select v-model="editPatientForm.doctor" class="field">
-                  <option v-for="doc in clinicDoctors" :key="doc.id" :value="doc.name">{{ doc.fullTitle }}</option>
-                </select>
-              </label>
+                <doctor-select v-model="editPatientForm.doctor" :doctors="clinicDoctors"></doctor-select>
+              </div>
               <div class="block">
                 <span class="field-label">主責醫師順序 (跨專科)</span>
                 <div class="relative">
@@ -1765,7 +1766,7 @@
               健康警示
             </h4>
             <label class="block">
-              <span class="field-label flex items-center justify-between">藥物過敏史 <span class="font-normal text-slate-500">多筆以逗號分隔</span></span>
+              <span class="field-label flex items-center justify-between">藥物史/過敏史 <span class="font-normal text-slate-500">多筆以逗號分隔</span></span>
               <input type="text" v-model="editPatientForm.drugAllergiesInput" class="field" placeholder="例：Penicillin 過敏、局部麻醉劑過敏" />
             </label>
             <label class="block">
@@ -1782,7 +1783,7 @@
             <div class="px-5 py-4" :class="(selectedPatient.drugAllergies || []).length > 0 ? 'bg-rose-50' : ''">
               <h4 class="flex items-center gap-1.5 text-[13px] font-medium mb-2" :class="(selectedPatient.drugAllergies || []).length > 0 ? 'text-rose-700' : 'text-slate-500'">
                 <svg v-if="(selectedPatient.drugAllergies || []).length > 0" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
-                藥物過敏
+                藥物史/過敏史
               </h4>
               <div class="flex flex-wrap gap-1.5">
                 <span v-for="item in (selectedPatient.drugAllergies || [])" :key="item" class="chip chip-alert h-7 px-2.5 text-[13px] bg-white ring-rose-200">{{ item }}</span>
@@ -1830,22 +1831,28 @@
               <li
                 v-for="(app, appIdx) in getPatientAppointments(selectedPatient.id)"
                 :key="app.id"
-                class="panel overflow-hidden"
-                :class="hasAppointmentDuplicateWarning(app) ? 'border-rose-300' : ''"
+                class="panel"
+                :class="[editingAppointmentId === app.id ? '' : 'overflow-hidden', hasAppointmentDuplicateWarning(app) ? 'border-rose-300' : '']"
               >
                 <div class="px-5 pt-4 pb-4 space-y-3">
                   <div class="space-y-1">
                   <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                    <button
-                      type="button"
-                      @click.stop="startEditAppointmentDateTime(app)"
-                      class="group/date text-left leading-tight"
-                      title="更改日期與時間（改期）"
-                    >
-                      <span class="num text-base font-semibold text-slate-900 group-hover/date:text-blue-700">{{ app.date }}</span>
-                      <span class="text-sm text-slate-500 ml-1.5">{{ getWeekdayShort(app.date) }}</span>
-                      <span class="num text-base font-semibold text-slate-900 group-hover/date:text-blue-700 ml-3">{{ getAppointmentTimeRange(app) }}</span>
-                    </button>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+                      <button
+                        type="button"
+                        @click.stop="startEditAppointmentDateTime(app)"
+                        class="group/date text-left leading-tight"
+                        title="編輯這筆約診"
+                      >
+                        <span class="num text-base font-semibold text-slate-900 group-hover/date:text-blue-700">{{ app.date }}</span>
+                        <span class="text-sm text-slate-500 ml-1.5">{{ getWeekdayShort(app.date) }}</span>
+                        <span class="num text-base font-semibold text-slate-900 group-hover/date:text-blue-700 ml-3">{{ getAppointmentTimeRange(app) }}</span>
+                      </button>
+                      <span class="inline-flex items-center gap-1.5 text-sm text-slate-700" title="看診時長">
+                        <svg class="w-4 h-4 flex-shrink-0 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4M12 2v3M18.4 6.6 20 5"/></svg>
+                        <span><span class="num">{{ app.duration || 60 }}</span> 分鐘</span>
+                      </span>
+                    </div>
                     <div class="flex items-center gap-1 flex-shrink-0">
                       <button
                         type="button"
@@ -1854,7 +1861,7 @@
                         :class="getAppointmentStatusBadgeClass(app.status)"
                         :title="`切換狀態（目前：${app.status || '已預約'}；依序：已預約 → 已報到 → 未報到）`"
                       >{{ app.status || '已預約' }}</button>
-                      <button type="button" @click.stop="startEditAppointmentDateTime(app)" class="btn btn-ghost btn-sm btn-icon" title="改期" aria-label="改期">
+                      <button type="button" @click.stop="startEditAppointmentDateTime(app)" class="btn btn-ghost btn-sm btn-icon" title="編輯約診" aria-label="編輯約診">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                       </button>
                       <button type="button" @click.stop="deleteAppointment(app.id)" class="btn btn-ghost btn-sm btn-icon hover:text-rose-700" title="刪除這筆約診" aria-label="刪除這筆約診">
@@ -1864,56 +1871,114 @@
                   </div>
 
                   <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
-                    <span class="inline-flex items-center gap-1.5 text-slate-700" title="看診時長">
-                      <svg class="w-4 h-4 flex-shrink-0 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4M12 2v3M18.4 6.6 20 5"/></svg>
-                      <span><span class="num">{{ app.duration || 60 }}</span> 分鐘</span>
-                    </span>
                     <doctor-tag :name="app.doctor" class="text-slate-700"></doctor-tag>
                     <span class="font-medium text-slate-900">{{ app.category }} · {{ getAppTreatmentItemsText(app) }}</span>
                   </div>
                   </div>
 
-                  <!-- 改期面板 -->
+                  <!-- 約診編輯面板：欄位與「安排約診」的約診內容相同 -->
                   <div v-if="editingAppointmentId === app.id" class="rounded-lg border border-blue-300 bg-blue-50/50 p-4 space-y-3" @click.stop>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <h5 class="text-sm font-semibold text-slate-900">約診內容</h5>
+
+                    <!-- 點擊外部關閉多選面板 -->
+                    <div v-if="isEditCategoryPickerOpen || isEditItemPickerOpen" class="fixed inset-0 z-30" @click="isEditCategoryPickerOpen = false; isEditItemPickerOpen = false"></div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
+                      <div class="block">
+                        <span class="field-label">看診醫師 <span class="text-rose-600">*</span></span>
+                        <doctor-select v-model="editAppForm.doctor" :doctors="clinicDoctors" @change="onEditAppDoctorChange"></doctor-select>
+                      </div>
+
+                      <div class="relative">
+                        <span class="field-label flex items-center gap-1">治療項目 <span class="text-rose-600">*</span><span v-if="editAppForm.treatmentCategories?.length" class="ml-auto font-normal text-slate-500">已選 {{ editAppForm.treatmentCategories.length }}</span></span>
+                        <button type="button" @click.stop="isEditCategoryPickerOpen = !isEditCategoryPickerOpen; isEditItemPickerOpen = false" class="field flex items-center justify-between text-left" :aria-expanded="isEditCategoryPickerOpen">
+                          <span class="truncate" :class="editAppForm.treatmentCategories?.length ? 'text-slate-900' : 'text-slate-500'">{{ editAppForm.treatmentCategories?.length ? editAppForm.treatmentCategories.join('、') : '選擇治療項目' }}</span>
+                          <svg class="w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        <div v-if="isEditCategoryPickerOpen" @click.stop class="absolute left-0 top-full mt-1 w-72 max-w-[80vw] panel shadow-xl p-3 z-40 space-y-2.5">
+                          <div class="flex items-center justify-between">
+                            <span class="text-xs font-medium text-slate-700">治療大類（可複選）</span>
+                            <button type="button" @click="isEditCategoryPickerOpen = false" class="btn btn-ghost btn-sm">完成</button>
+                          </div>
+                          <div class="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto">
+                            <label v-for="cat in availableTreatmentCategories" :key="cat" class="flex items-center gap-2 px-2 py-1.5 rounded text-[13px] cursor-pointer hover:bg-slate-100" :class="(editAppForm.treatmentCategories || []).includes(cat) ? 'text-slate-900 font-medium' : 'text-slate-700'">
+                              <input type="checkbox" :checked="(editAppForm.treatmentCategories || []).includes(cat)" @change="toggleEditTreatmentCategory(cat)" class="w-4 h-4 rounded border-slate-300 accent-slate-900" />
+                              <span class="truncate">{{ cat }}</span>
+                            </label>
+                          </div>
+                          <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100">
+                            <input type="text" v-model="editAppForm.customCategoryInput" @keydown.enter.prevent="addCustomEditTreatmentCategory" placeholder="自填大類，按 Enter" class="field field-sm flex-1" />
+                            <button type="button" @click="addCustomEditTreatmentCategory" class="btn btn-secondary btn-sm">新增</button>
+                          </div>
+                        </div>
+                        <div v-if="editAppForm.treatmentCategories?.length" class="flex flex-wrap gap-1 mt-1.5">
+                          <span v-for="cat in editAppForm.treatmentCategories" :key="cat" class="chip chip-neutral">{{ cat }}<button type="button" @click="toggleEditTreatmentCategory(cat)" class="opacity-60 hover:opacity-100" :aria-label="'移除 ' + cat">×</button></span>
+                        </div>
+                      </div>
+
+                      <div class="relative">
+                        <span class="field-label flex items-center gap-1">當日看診項目 <span class="text-rose-600">*</span><span v-if="editAppForm.treatmentItems?.length" class="ml-auto font-normal text-slate-500">已選 {{ editAppForm.treatmentItems.length }}</span></span>
+                        <button type="button" :disabled="!editAppForm.treatmentCategories?.length" @click.stop="isEditItemPickerOpen = !isEditItemPickerOpen; isEditCategoryPickerOpen = false" class="field flex items-center justify-between text-left disabled:cursor-not-allowed" :aria-expanded="isEditItemPickerOpen">
+                          <span class="truncate" :class="editAppForm.treatmentItems?.length ? 'text-slate-900' : 'text-slate-500'">{{ editAppForm.treatmentItems?.length ? editAppForm.treatmentItems.join('、') : (!editAppForm.treatmentCategories?.length ? '先選治療項目' : '選擇看診項目') }}</span>
+                          <svg class="w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </button>
+                        <div v-if="isEditItemPickerOpen && editAppForm.treatmentCategories?.length" @click.stop class="absolute right-0 top-full mt-1 w-80 max-w-[80vw] panel shadow-xl p-3 z-40 space-y-2.5">
+                          <div class="flex items-center justify-between">
+                            <span class="text-xs font-medium text-slate-700">當日看診細項（可複選）</span>
+                            <button type="button" @click="isEditItemPickerOpen = false" class="btn btn-ghost btn-sm">完成</button>
+                          </div>
+                          <div class="space-y-2.5 max-h-56 overflow-y-auto">
+                            <div v-for="group in editCascadedTreatmentGroups" :key="group.category">
+                              <div class="text-xs font-medium text-slate-500 px-1 pb-1">{{ group.category }}</div>
+                              <div class="grid grid-cols-2 gap-1">
+                                <label v-for="item in group.items" :key="item" class="flex items-center gap-2 px-2 py-1 rounded text-[13px] cursor-pointer hover:bg-slate-100" :class="(editAppForm.treatmentItems || []).includes(item) ? 'text-slate-900 font-medium' : 'text-slate-700'">
+                                  <input type="checkbox" :checked="(editAppForm.treatmentItems || []).includes(item)" @change="toggleEditTreatmentItem(item)" class="w-4 h-4 rounded border-slate-300 accent-slate-900" />
+                                  <span class="truncate">{{ item }}</span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="flex items-center gap-1.5 pt-2 border-t border-slate-100">
+                            <input type="text" v-model="editAppForm.customItemInput" @keydown.enter.prevent="addCustomEditTreatmentItem" placeholder="自填細項，按 Enter" class="field field-sm flex-1" />
+                            <button type="button" @click="addCustomEditTreatmentItem" class="btn btn-secondary btn-sm">新增</button>
+                          </div>
+                        </div>
+                        <div v-if="editAppForm.treatmentItems?.length" class="flex flex-wrap gap-1 mt-1.5">
+                          <span v-for="item in editAppForm.treatmentItems" :key="item" class="chip chip-neutral">{{ item }}<button type="button" @click="toggleEditTreatmentItem(item)" class="opacity-60 hover:opacity-100" :aria-label="'移除 ' + item">×</button></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
                       <label class="block">
-                        <span class="field-label">日期</span>
-                        <input type="date" v-model="editAppForm.date" class="field field-sm num" />
+                        <span class="field-label">日期 <span class="text-rose-600">*</span></span>
+                        <input type="date" v-model="editAppForm.date" class="field num" />
+                        <span v-if="editAppForm.date" class="block text-xs text-slate-500 mt-1">T-3 提醒日 <span class="num text-slate-700">{{ getTMinus3Date(editAppForm.date).replace(/-/g, '/') }}</span><template v-if="editAppForm.date !== app.date">（原 <span class="num">{{ getTMinus3Date(app.date).replace(/-/g, '/') }}</span>）</template></span>
                       </label>
                       <label class="block">
-                        <span class="field-label">開始時間</span>
-                        <input type="time" v-model="editAppForm.time" step="300" class="field field-sm num" />
+                        <span class="field-label">時間 <span class="text-rose-600">*</span></span>
+                        <input type="time" v-model="editAppForm.time" step="300" class="field num" />
                       </label>
                       <label class="block">
-                        <span class="field-label">時長</span>
-                        <select v-model.number="editAppForm.duration" class="field field-sm">
-                          <option :value="15">15 分鐘</option>
-                          <option :value="20">20 分鐘</option>
-                          <option :value="30">30 分鐘</option>
-                          <option :value="40">40 分鐘</option>
-                          <option :value="45">45 分鐘</option>
-                          <option :value="60">60 分鐘</option>
-                          <option :value="90">90 分鐘</option>
-                          <option :value="120">120 分鐘</option>
-                          <option :value="150">150 分鐘</option>
-                          <option :value="180">180 分鐘</option>
-                        </select>
-                      </label>
-                      <label class="block">
-                        <span class="field-label">看診醫師</span>
-                        <select v-model="editAppForm.doctor" @change="onEditAppDoctorChange" class="field field-sm">
-                          <option v-for="doc in clinicDoctors" :key="doc.id" :value="doc.name">{{ doc.name }}</option>
-                        </select>
+                        <span class="field-label">時長（分鐘） <span class="text-rose-600">*</span></span>
+                        <input type="number" min="5" max="480" step="5" v-model.number="editAppForm.duration" class="field num" />
+                        <span class="flex items-center gap-1 mt-1">
+                          <button v-for="mins in [15, 30, 60, 90]" :key="mins" type="button" @click="editAppForm.duration = mins" class="chip h-6 px-2 num" :class="editAppForm.duration === mins ? 'bg-blue-600 text-white ring-blue-600' : 'chip-neutral hover:bg-slate-200'">{{ mins }}</button>
+                        </span>
                       </label>
                     </div>
-                    <p class="text-[13px] text-slate-600">
-                      新時段 <span class="num font-medium text-slate-900">{{ calculatePreviewTimeRange(editAppForm.time, editAppForm.duration) }}</span>
-                      · T-3 提醒日 <span class="num font-medium text-slate-900">{{ getTMinus3Date(editAppForm.date) }}</span><template v-if="editAppForm.date !== app.date">（原 {{ getTMinus3Date(app.date) }}）</template>
-                      · 療程與備註保持不變
+
+                    <label class="block">
+                      <span class="field-label">特殊叮嚀</span>
+                      <input type="text" v-model="editAppForm.notes" class="field" placeholder="例：確認假牙是否已從技工所送回、告知術前禁食" />
+                    </label>
+                    <p class="text-xs text-slate-500">
+                      新時段 <span class="num text-slate-900">{{ calculatePreviewTimeRange(editAppForm.time, editAppForm.duration) }}</span>
+                      · 處置摘要：<span class="text-slate-900">{{ editAppForm.treatmentCategories?.length ? editAppForm.treatmentCategories.join(' / ') : (editAppForm.category || '尚未選擇治療項目') }}</span>
                     </p>
                     <div class="flex justify-end gap-2">
                       <button type="button" @click.stop="cancelEditAppointmentDateTime" class="btn btn-ghost btn-sm">取消</button>
-                      <button type="button" @click.stop="saveAppointmentDateTime(app)" class="btn btn-primary btn-sm">儲存改期</button>
+                      <button type="button" @click.stop="saveAppointmentDateTime(app)" class="btn btn-primary btn-sm">儲存修改</button>
                     </div>
                   </div>
 
@@ -1921,7 +1986,7 @@
                     這個時段（{{ getAppointmentTimeRange(app) }}）與同日另一筆約診重疊，請確認是否重複排程。
                   </p>
 
-                  <div class="flex items-center gap-3" @click.stop>
+                  <div v-if="editingAppointmentId !== app.id" class="flex items-center gap-3" @click.stop>
                     <label :for="'app-note-' + app.id" class="text-[13px] font-medium text-slate-600 flex-shrink-0">特殊叮嚀</label>
                     <input
                       :id="'app-note-' + app.id"
@@ -1937,7 +2002,7 @@
 
                 <!-- T-3 提醒：待發送時鈴鐺會搖，發送後變灰 -->
                 <div
-                  class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-2.5 border-t"
+                  class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-5 py-2.5 border-t rounded-b-xl"
                   :class="app.reminderDone ? 'bell-muted border-slate-200 bg-slate-50' : 'border-amber-200 bg-amber-50'"
                 >
                   <span class="inline-flex items-center gap-2 text-sm" :class="app.reminderDone ? 'text-slate-600' : 'text-amber-900'">
@@ -3028,7 +3093,7 @@
                 </p>
                 <div v-if="selectedExistingPatient" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label class="block">
-                    <span class="field-label">藥物過敏史</span>
+                    <span class="field-label">藥物史/過敏史</span>
                     <input type="text" v-model="newAppointmentForm.existingPatientDrugAllergies" class="field" placeholder="無已知藥物過敏" />
                   </label>
                   <label class="block">
@@ -3111,7 +3176,7 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label class="block">
-                    <span class="field-label flex items-center justify-between">藥物過敏史 <span class="font-normal text-slate-500">逗號分隔</span></span>
+                    <span class="field-label flex items-center justify-between">藥物史/過敏史 <span class="font-normal text-slate-500">逗號分隔</span></span>
                     <input type="text" v-model="newAppointmentForm.newPatientDrugAllergies" class="field" placeholder="例：盤尼西林、局部麻醉" />
                   </label>
                   <label class="block">
@@ -3129,12 +3194,10 @@
             <section class="space-y-3 pt-5 border-t border-slate-200">
               <h4 class="section-title">約診內容</h4>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
-                <label class="block">
+                <div class="block">
                   <span class="field-label">看診醫師 <span class="text-rose-600">*</span></span>
-                  <select v-model="newAppointmentForm.doctor" @change="newAppointmentForm.chair = getDefaultChairForDoctor(newAppointmentForm.doctor)" class="field">
-                    <option v-for="doc in clinicDoctors" :key="doc.id" :value="doc.name">{{ doc.name }}</option>
-                  </select>
-                </label>
+                  <doctor-select v-model="newAppointmentForm.doctor" :doctors="clinicDoctors" @change="newAppointmentForm.chair = getDefaultChairForDoctor(newAppointmentForm.doctor)"></doctor-select>
+                </div>
 
                 <div class="relative">
                   <span class="field-label flex items-center gap-1">治療項目 <span class="text-rose-600">*</span><span v-if="newAppointmentForm.treatmentCategories?.length" class="ml-auto font-normal text-slate-500">已選 {{ newAppointmentForm.treatmentCategories.length }}</span></span>
@@ -3325,27 +3388,24 @@
                   <option value="已完成">已完成</option>
                 </select>
               </label>
-              <label class="block">
+              <div class="block">
                 <span class="field-label">主治醫師</span>
-                <select v-model="newPatientForm.doctor" class="field">
-                  <option value="">尚未指派</option>
-                  <option v-for="doc in clinicDoctors" :key="doc.id" :value="doc.name">{{ doc.fullTitle }}</option>
-                </select>
-              </label>
+                <doctor-select v-model="newPatientForm.doctor" :doctors="clinicDoctors" empty-label="尚未指派"></doctor-select>
+              </div>
               <label class="block">
                 <span class="field-label">進度階段</span>
                 <input type="text" v-model="newPatientForm.pipelineStage" list="pipelineStageOptions" class="field" placeholder="例：1. 初診諮詢" />
               </label>
-              <label class="block col-span-2">
+              <div class="block col-span-2">
                 <span class="field-label">主責醫師順序（跨專科）</span>
-                <input type="text" v-model="newPatientForm.leadDoctors" class="field" placeholder="例：TE, 銘" />
-              </label>
+                <doctor-order-picker v-model="newPatientForm.leadDoctors" :doctors="clinicDoctors" placeholder="依序點選醫師"></doctor-order-picker>
+              </div>
             </section>
 
             <section class="space-y-3 pt-5 border-t border-slate-200">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label class="block">
-                  <span class="field-label flex items-center justify-between">藥物過敏史 <span class="font-normal text-slate-500">逗號分隔</span></span>
+                  <span class="field-label flex items-center justify-between">藥物史/過敏史 <span class="font-normal text-slate-500">逗號分隔</span></span>
                   <input type="text" v-model="newPatientForm.drugAllergiesInput" class="field" />
                 </label>
                 <label class="block">
@@ -3485,11 +3545,12 @@
               <label v-if="editingLabId" class="block">
                 <span class="field-label">狀態</span>
                 <select v-model="newLabForm.status" class="field" :class="getLabStatusBadgeClass(newLabForm.status)">
+                  <option value="已送達待製作">已送達待製作</option>
                   <option value="製作中">製作中</option>
                   <option value="已送達診所待驗收">已送達待驗收</option>
                   <option value="驗收完成">驗收完成</option>
-                  <option value="試戴已裝固">試戴已裝固</option>
                   <option value="需退回重做">需退回重做</option>
+                  <option v-if="newLabForm.status === '試戴已裝固'" value="試戴已裝固" disabled>試戴已裝固（已停用）</option>
                 </select>
               </label>
               <label class="block">
@@ -4133,6 +4194,74 @@
             <button v-for="doc in doctors" :key="doc.id" type="button" class="doctor-chip" :class="{ 'is-active': modelValue === doc.name, 'is-dimmed': modelValue !== 'ALL' && modelValue !== doc.name }" :aria-pressed="modelValue === doc.name" :title="modelValue === doc.name ? '顯示全部醫師' : '只看 ' + doc.fullTitle" @click="$emit('update:modelValue', modelValue === doc.name ? 'ALL' : doc.name)"><span class="doctor-dot" :style="{ backgroundColor: doc.color }"></span>{{ doc.name.replace(' 醫師', '').replace('醫師', '') }}</button>
           </div>`
         },
+        // 單選醫師：原生 <select> 的選項畫不出色點，所以自己做下拉。emptyLabel 有值時第一項是「未指派」。
+        // 選定後先更新 v-model，再送出 change，用法和原生 select 的 @change 相同。
+        DoctorSelect: {
+          props: { modelValue: { type: String, default: '' }, doctors: { type: Array, default: () => [] }, emptyLabel: { type: String, default: '' } },
+          emits: ['update:modelValue', 'change'],
+          data() { return { open: false }; },
+          computed: { current() { return this.doctors.find(d => d.name === this.modelValue) || null; } },
+          mounted() {
+            this.onDocClick = (e) => { if (!this.$el.contains(e.target)) this.open = false; };
+            document.addEventListener('click', this.onDocClick);
+          },
+          unmounted() { document.removeEventListener('click', this.onDocClick); },
+          methods: {
+            pick(name) {
+              this.open = false;
+              if (name === this.modelValue) return;
+              this.$emit('update:modelValue', name);
+              this.$emit('change', name);
+            }
+          },
+          template: `<div class="relative">
+            <button type="button" class="field flex items-center justify-between text-left" aria-haspopup="listbox" :aria-expanded="open" @click="open = !open">
+              <span v-if="current" class="flex items-center gap-2 truncate text-slate-900"><span class="doctor-dot" :style="{ backgroundColor: current.color || '#0d9488' }"></span>{{ current.fullTitle || current.name }}</span>
+              <span v-else class="truncate" :class="modelValue ? 'text-slate-900' : 'text-slate-500'">{{ modelValue || emptyLabel }}</span>
+              <svg class="w-4 h-4 text-slate-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div v-if="open" class="absolute left-0 right-0 top-full mt-1 panel shadow-xl p-1.5 z-50 max-h-60 overflow-y-auto" role="listbox">
+              <button v-if="emptyLabel" type="button" role="option" :aria-selected="!modelValue" @click="pick('')" class="w-full h-9 px-2 rounded-md flex items-center text-sm hover:bg-slate-100" :class="!modelValue ? 'text-blue-800 font-medium bg-blue-50' : 'text-slate-700'">{{ emptyLabel }}</button>
+              <button v-for="doc in doctors" :key="doc.id" type="button" role="option" :aria-selected="modelValue === doc.name" @click="pick(doc.name)" class="w-full h-9 px-2 rounded-md flex items-center gap-2 text-sm hover:bg-slate-100" :class="modelValue === doc.name ? 'text-blue-800 font-medium bg-blue-50' : 'text-slate-700'"><span class="doctor-dot" :style="{ backgroundColor: doc.color || '#0d9488' }"></span>{{ doc.fullTitle || doc.name }}</button>
+            </div>
+          </div>`
+        },
+        // 主責醫師順序：依點選先後排列，再點一次取消；外觀與「安排約診」的主責醫師選擇器相同。
+        DoctorOrderPicker: {
+          props: { modelValue: { type: Array, default: () => [] }, doctors: { type: Array, default: () => [] }, placeholder: { type: String, default: '依序點選' } },
+          emits: ['update:modelValue'],
+          data() { return { open: false }; },
+          mounted() {
+            this.onDocClick = (e) => { if (!this.$el.contains(e.target)) this.open = false; };
+            document.addEventListener('click', this.onDocClick);
+          },
+          unmounted() { document.removeEventListener('click', this.onDocClick); },
+          methods: {
+            toggle(name) {
+              const list = [...this.modelValue];
+              const idx = list.indexOf(name);
+              if (idx >= 0) list.splice(idx, 1); else list.push(name);
+              this.$emit('update:modelValue', list);
+            },
+            rank(name) { return this.modelValue.indexOf(name) + 1; }
+          },
+          template: `<div class="relative">
+            <button type="button" class="field flex items-center justify-between text-left" :aria-expanded="open" @click="open = !open">
+              <span class="truncate" :class="modelValue.length ? 'text-slate-900' : 'text-slate-500'">{{ modelValue.length ? modelValue.join('、') : placeholder }}</span>
+              <svg class="w-4 h-4 text-slate-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div v-if="open" class="absolute left-0 right-0 top-full mt-1 panel shadow-xl p-1.5 z-50 max-h-60 overflow-y-auto">
+              <div class="flex items-center justify-between px-2 pb-1.5 mb-1 border-b border-slate-100 text-[13px] text-slate-500">
+                <span>依點選順序排列</span>
+                <button type="button" @click="$emit('update:modelValue', [])" class="text-rose-700 hover:underline">清空</button>
+              </div>
+              <button v-for="doc in doctors" :key="doc.id" type="button" @click="toggle(doc.name)" class="w-full h-9 px-2 rounded-md flex items-center justify-between text-sm hover:bg-slate-100" :class="rank(doc.name) ? 'text-blue-800 font-medium bg-blue-50' : 'text-slate-700'">
+                <span class="flex items-center gap-2"><span class="doctor-dot" :style="{ backgroundColor: doc.color || '#0d9488' }"></span>{{ doc.name }}</span>
+                <span v-if="rank(doc.name)" class="text-[13px] text-blue-700">第 {{ rank(doc.name) }} 順位</span>
+              </button>
+            </div>
+          </div>`
+        },
         ...window.ClinicCatScenes,
         ReminderBell: {
           props: { active: { type: Boolean, default: true } },
@@ -4717,7 +4846,7 @@
             { key: 'calendarT3Capsules', label: '日期格內的 T-3 提醒' }
           ] },
           { id: 'drawer', title: '個案資料夾', rows: [
-            { key: 'drawerAlerts', label: '健康警示（藥物過敏、全身性疾病）' },
+            { key: 'drawerAlerts', label: '健康警示（藥物史/過敏史、全身性疾病）' },
             { key: 'drawerTreatmentPlan', label: '治療計畫' },
             { key: 'drawerAppointments', label: '約診紀錄' },
             { key: 'drawerBilling', label: '合約與收款', money: true },
@@ -5233,6 +5362,13 @@
         const rememberLocalState = () => {
           for (const [table, list] of Object.entries(collections)) observed[table] = S.clone(list.value);
         };
+        // 舊版建立個案時會自動寫入個管備註；只清掉一字不差、沒人改過的那幾種，其餘內容不動。
+        const AUTO_CONSULT_NOTE = /^.+建立：已安排約診於 \d{4}-\d{2}-\d{2} \d{1,2}:\d{2}。$/;
+        const clearAutoGeneratedConsultNotes = () => {
+          for (const p of patients.value) {
+            if (typeof p.consultNotes === 'string' && (p.consultNotes === '螺絲小姐初診建立完成。' || AUTO_CONSULT_NOTE.test(p.consultNotes))) p.consultNotes = '';
+          }
+        };
         const recordChanges = () => {
           for (const [table, list] of Object.entries(collections)) {
             for (const change of S.diff(table, observed[table] || [], list.value)) {
@@ -5394,6 +5530,8 @@
             });
             if (selectedPatient.value) selectedPatient.value = patients.value.find(p => p.id === selectedPatient.value.id) || null;
             rememberLocalState();
+            // 在記下雲端基準之後才清，saveToStorage 會把清掉的備註當成一般修改上傳
+            clearAutoGeneratedConsultNotes();
             saveToStorage();
             persistQueue();
             supabaseSyncStatus.value = activePending().length ? 'error' : 'connected';
@@ -5545,7 +5683,7 @@
           labOrders.value = savedLabs ? JSON.parse(savedLabs) : [];
           followups.value = savedFollowups ? JSON.parse(savedFollowups) : [];
 
-          // 相容性防呆與藥物過敏史/全身病史自動拆分升級 + 牙位儀表板資料補齊
+          // 相容性防呆與藥物史/過敏史/全身病史自動拆分升級 + 牙位儀表板資料補齊
           patients.value.forEach(p => {
             if (!p.drugAllergies) {
               p.drugAllergies = (p.medicalAlerts || []).filter(a => /過敏|麻醉|抗生素|感冒藥|Penicillin|盤尼西林/.test(a));
@@ -5697,85 +5835,101 @@
           return (systemSettings.value?.appointmentConfig?.treatmentCategories) || DEFAULT_APPOINTMENT_CONFIG.treatmentCategories;
         });
 
-        // 依選中之治療大類連動產出分組細項
-        const cascadedTreatmentGroups = computed(() => {
+        // 治療項目與當日看診項目的選取邏輯：「安排約診」視窗與個案資料夾的約診編輯共用，各自傳入自己的表單。
+        const getCascadedTreatmentGroups = (form) => {
           const mapping = (systemSettings.value?.appointmentConfig?.treatmentItemsMapping) || DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping;
-          const selectedCats = newAppointmentForm.value.treatmentCategories || [];
+          const selectedCats = form.treatmentCategories || [];
           return selectedCats.map(cat => ({
             category: cat,
             items: mapping[cat] || []
           }));
-        });
+        };
 
-        const syncAppointmentCategorySummary = () => {
-          const cats = newAppointmentForm.value.treatmentCategories || [];
-          const items = newAppointmentForm.value.treatmentItems || [];
+        const syncAppointmentCategorySummary = (form) => {
+          const cats = form.treatmentCategories || [];
+          const items = form.treatmentItems || [];
           if (cats.length > 0) {
-            newAppointmentForm.value.category = cats.join(' / ');
+            form.category = cats.join(' / ');
           } else if (items.length > 0) {
-            newAppointmentForm.value.category = items.join(', ');
+            form.category = items.join(', ');
           }
         };
 
-        const toggleTreatmentCategory = (cat) => {
-          if (!newAppointmentForm.value.treatmentCategories) {
-            newAppointmentForm.value.treatmentCategories = [];
+        const toggleCategoryInForm = (form, cat) => {
+          if (!form.treatmentCategories) {
+            form.treatmentCategories = [];
           }
-          const idx = newAppointmentForm.value.treatmentCategories.indexOf(cat);
+          const idx = form.treatmentCategories.indexOf(cat);
           if (idx >= 0) {
-            newAppointmentForm.value.treatmentCategories.splice(idx, 1);
+            form.treatmentCategories.splice(idx, 1);
             // 同步過濾已選之該分類細項
             const mapping = (systemSettings.value?.appointmentConfig?.treatmentItemsMapping) || DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping;
             const catItems = mapping[cat] || [];
-            if (newAppointmentForm.value.treatmentItems) {
-              newAppointmentForm.value.treatmentItems = newAppointmentForm.value.treatmentItems.filter(item => !catItems.includes(item));
+            if (form.treatmentItems) {
+              form.treatmentItems = form.treatmentItems.filter(item => !catItems.includes(item));
             }
           } else {
-            newAppointmentForm.value.treatmentCategories.push(cat);
+            form.treatmentCategories.push(cat);
           }
-          syncAppointmentCategorySummary();
+          syncAppointmentCategorySummary(form);
         };
 
-        const addCustomTreatmentCategory = () => {
-          const val = (newAppointmentForm.value.customCategoryInput || '').trim();
+        const addCustomCategoryInForm = (form) => {
+          const val = (form.customCategoryInput || '').trim();
           if (val) {
-            if (!newAppointmentForm.value.treatmentCategories) {
-              newAppointmentForm.value.treatmentCategories = [];
+            if (!form.treatmentCategories) {
+              form.treatmentCategories = [];
             }
-            if (!newAppointmentForm.value.treatmentCategories.includes(val)) {
-              newAppointmentForm.value.treatmentCategories.push(val);
+            if (!form.treatmentCategories.includes(val)) {
+              form.treatmentCategories.push(val);
             }
-            newAppointmentForm.value.customCategoryInput = '';
-            syncAppointmentCategorySummary();
+            form.customCategoryInput = '';
+            syncAppointmentCategorySummary(form);
           }
         };
 
-        const toggleTreatmentItem = (item) => {
-          if (!newAppointmentForm.value.treatmentItems) {
-            newAppointmentForm.value.treatmentItems = [];
+        const toggleItemInForm = (form, item) => {
+          if (!form.treatmentItems) {
+            form.treatmentItems = [];
           }
-          const idx = newAppointmentForm.value.treatmentItems.indexOf(item);
+          const idx = form.treatmentItems.indexOf(item);
           if (idx >= 0) {
-            newAppointmentForm.value.treatmentItems.splice(idx, 1);
+            form.treatmentItems.splice(idx, 1);
           } else {
-            newAppointmentForm.value.treatmentItems.push(item);
+            form.treatmentItems.push(item);
           }
-          syncAppointmentCategorySummary();
+          syncAppointmentCategorySummary(form);
         };
 
-        const addCustomTreatmentItem = () => {
-          const val = (newAppointmentForm.value.customItemInput || '').trim();
+        const addCustomItemInForm = (form) => {
+          const val = (form.customItemInput || '').trim();
           if (val) {
-            if (!newAppointmentForm.value.treatmentItems) {
-              newAppointmentForm.value.treatmentItems = [];
+            if (!form.treatmentItems) {
+              form.treatmentItems = [];
             }
-            if (!newAppointmentForm.value.treatmentItems.includes(val)) {
-              newAppointmentForm.value.treatmentItems.push(val);
+            if (!form.treatmentItems.includes(val)) {
+              form.treatmentItems.push(val);
             }
-            newAppointmentForm.value.customItemInput = '';
-            syncAppointmentCategorySummary();
+            form.customItemInput = '';
+            syncAppointmentCategorySummary(form);
           }
         };
+
+        // 「安排約診」視窗
+        const cascadedTreatmentGroups = computed(() => getCascadedTreatmentGroups(newAppointmentForm.value));
+        const toggleTreatmentCategory = (cat) => toggleCategoryInForm(newAppointmentForm.value, cat);
+        const addCustomTreatmentCategory = () => addCustomCategoryInForm(newAppointmentForm.value);
+        const toggleTreatmentItem = (item) => toggleItemInForm(newAppointmentForm.value, item);
+        const addCustomTreatmentItem = () => addCustomItemInForm(newAppointmentForm.value);
+
+        // 個案資料夾的約診編輯（editAppForm 定義在下方「更改約診」區塊，這些函式只在操作時才讀取）
+        const isEditCategoryPickerOpen = ref(false);
+        const isEditItemPickerOpen = ref(false);
+        const editCascadedTreatmentGroups = computed(() => getCascadedTreatmentGroups(editAppForm.value));
+        const toggleEditTreatmentCategory = (cat) => toggleCategoryInForm(editAppForm.value, cat);
+        const addCustomEditTreatmentCategory = () => addCustomCategoryInForm(editAppForm.value);
+        const toggleEditTreatmentItem = (item) => toggleItemInForm(editAppForm.value, item);
+        const addCustomEditTreatmentItem = () => addCustomItemInForm(editAppForm.value);
 
         // 後台設定中心：TAB 5 門診約診元資料維護 (醫師名單、治療項目大類、處置細項庫)
         const selectedMetaCategory = ref('植牙');
@@ -5987,7 +6141,7 @@
           pipelineStage: '',
           consultCategory: '',
           doctor: '',
-          leadDoctors: '',
+          leadDoctors: [],
           caseManager: '螺絲小姐',
           projectTotal: 0,
           drugAllergiesInput: '',
@@ -6420,20 +6574,25 @@
         const pendingT3Reminders = computed(() => allT3Reminders.value.filter(r => (r.stage === 'today' || r.stage === 'overdue') && !r.reminderDone));
         const pendingT3Count = computed(() => pendingT3Reminders.value.length);
 
+        // 提醒視窗與首頁的 T-3、後續預約、須改約，每個分頁都依看診日期＋時間由遠而近排列，越晚的排越上面。
+        const compareAppDateTimeDesc = (a, b) => (b.date + ' ' + (b.time || '')).localeCompare(a.date + ' ' + (a.time || ''));
+
         const displayedDashboardT3List = computed(() => {
-          if (dashboardT3Tab.value === 'pending') return pendingT3Reminders.value;
-          if (dashboardT3Tab.value === 'upcoming') return upcomingT3Reminders.value;
-          if (dashboardT3Tab.value === 'done') return doneT3Reminders.value;
-          return allT3Reminders.value;
+          let list = allT3Reminders.value;
+          if (dashboardT3Tab.value === 'pending') list = pendingT3Reminders.value;
+          else if (dashboardT3Tab.value === 'upcoming') list = upcomingT3Reminders.value;
+          else if (dashboardT3Tab.value === 'done') list = doneT3Reminders.value;
+          return list.slice().sort(compareAppDateTimeDesc);
         });
 
         const displayedModalT3List = computed(() => {
-          if (t3ModalFilter.value === 'all') return allT3Reminders.value;
-          if (t3ModalFilter.value === 'today') return todayT3Reminders.value;
-          if (t3ModalFilter.value === 'overdue') return overdueT3Reminders.value;
-          if (t3ModalFilter.value === 'upcoming') return upcomingT3Reminders.value;
-          if (t3ModalFilter.value === 'done') return doneT3Reminders.value;
-          return pendingT3Reminders.value;
+          let list = pendingT3Reminders.value;
+          if (t3ModalFilter.value === 'all') list = allT3Reminders.value;
+          else if (t3ModalFilter.value === 'today') list = todayT3Reminders.value;
+          else if (t3ModalFilter.value === 'overdue') list = overdueT3Reminders.value;
+          else if (t3ModalFilter.value === 'upcoming') list = upcomingT3Reminders.value;
+          else if (t3ModalFilter.value === 'done') list = doneT3Reminders.value;
+          return list.slice().sort(compareAppDateTimeDesc);
         });
 
         // 後續預約與須改約不限日期，名單會比較長；先依病人建索引，查詢結果與逐筆掃描相同。
@@ -6539,13 +6698,13 @@
         const todayFollowupCount = computed(() => todayFollowupReminders.value.length);
 
         const displayedTodayFollowupList = computed(() => {
+          let list = todayFollowupReminders.value;
           if (todayFollowupModalFilter.value === 'pending') {
-            return todayFollowupReminders.value.filter(r => !r.followupDone);
+            list = list.filter(r => !r.followupDone);
+          } else if (todayFollowupModalFilter.value === 'done') {
+            list = list.filter(r => r.followupDone);
           }
-          if (todayFollowupModalFilter.value === 'done') {
-            return todayFollowupReminders.value.filter(r => r.followupDone);
-          }
-          return todayFollowupReminders.value;
+          return list.slice().sort(compareAppDateTimeDesc);
         });
 
         // ==============================================
@@ -6586,27 +6745,29 @@
         const todayRescheduleCount = computed(() => todayRescheduleReminders.value.length);
 
         const displayedTodayRescheduleList = computed(() => {
+          let list = todayRescheduleReminders.value;
           if (todayRescheduleModalFilter.value === 'pending') {
-            return todayRescheduleReminders.value.filter(r => !r.rescheduledDone);
+            list = list.filter(r => !r.rescheduledDone);
+          } else if (todayRescheduleModalFilter.value === 'done') {
+            list = list.filter(r => r.rescheduledDone);
           }
-          if (todayRescheduleModalFilter.value === 'done') {
-            return todayRescheduleReminders.value.filter(r => r.rescheduledDone);
-          }
-          return todayRescheduleReminders.value;
+          return list.slice().sort(compareAppDateTimeDesc);
         });
 
         // 首頁「後續預約」「須改約」區塊各自記住分頁，不影響提醒中心的篩選。
         const dashboardFollowupTab = ref('pending');
         const dashboardRescheduleTab = ref('pending');
         const displayedDashboardFollowupList = computed(() => {
-          if (dashboardFollowupTab.value === 'pending') return todayFollowupReminders.value.filter(r => !r.followupDone);
-          if (dashboardFollowupTab.value === 'done') return todayFollowupReminders.value.filter(r => r.followupDone);
-          return todayFollowupReminders.value;
+          let list = todayFollowupReminders.value;
+          if (dashboardFollowupTab.value === 'pending') list = list.filter(r => !r.followupDone);
+          else if (dashboardFollowupTab.value === 'done') list = list.filter(r => r.followupDone);
+          return list.slice().sort(compareAppDateTimeDesc);
         });
         const displayedDashboardRescheduleList = computed(() => {
-          if (dashboardRescheduleTab.value === 'pending') return todayRescheduleReminders.value.filter(r => !r.rescheduledDone);
-          if (dashboardRescheduleTab.value === 'done') return todayRescheduleReminders.value.filter(r => r.rescheduledDone);
-          return todayRescheduleReminders.value;
+          let list = todayRescheduleReminders.value;
+          if (dashboardRescheduleTab.value === 'pending') list = list.filter(r => !r.rescheduledDone);
+          else if (dashboardRescheduleTab.value === 'done') list = list.filter(r => r.rescheduledDone);
+          return list.slice().sort(compareAppDateTimeDesc);
         });
 
         // 提示功能 LINE 範本與操作函式
@@ -7181,8 +7342,12 @@
           return list;
         };
 
+        // 工件還沒回到診所的狀態：已送達技工所待製作、製作中
+        const LAB_NOT_ARRIVED_STATUSES = ['已送達待製作', '製作中'];
+        const isLabNotArrived = (order) => Boolean(order) && LAB_NOT_ARRIVED_STATUSES.includes(order.status);
+
         const urgentLabOrders = computed(() => {
-          return labOrders.value.filter(o => o.status === '製作中');
+          return labOrders.value.filter(isLabNotArrived);
         });
 
         const pendingFollowups = computed(() => {
@@ -7319,9 +7484,9 @@
           return 0;
         };
 
-        // 需催件：仍在製作中，且預計到件日已到／已過，或試戴裝牙日在兩天內
+        // 需催件：工件還沒回到診所（已送達待製作或製作中），且預計到件日已到／已過，或試戴裝牙日在兩天內
         const isNearDeadline = (order) => {
-          if (!order || order.status !== '製作中') return false;
+          if (!isLabNotArrived(order)) return false;
           const today = clinicToday.value;
           const soon = getDaysDiff(order.appointmentDate || '', today);
           return (order.expectedDate && order.expectedDate <= today) || (order.appointmentDate && soon <= 2);
@@ -7529,7 +7694,7 @@
                 const mapping = (systemSettings.value?.appointmentConfig?.treatmentItemsMapping) || DEFAULT_APPOINTMENT_CONFIG.treatmentItemsMapping;
                 const firstItems = mapping[matchedCats[0]] || [];
                 newAppointmentForm.value.treatmentItems = firstItems.slice(0, 1);
-                syncAppointmentCategorySummary();
+                syncAppointmentCategorySummary(newAppointmentForm.value);
               }
             }
           }
@@ -7648,7 +7813,7 @@
                 systemicDiseases: systemicDiseases,
                 medicalAlerts: combinedAlerts,
                 chiefComplaint: chiefComplaintVal,
-                consultNotes: `${caseMgr}建立：已安排約診於 ${newAppointmentForm.value.date} ${newAppointmentForm.value.time}。`,
+                consultNotes: '',
                 paymentHistory: []
               };
 
@@ -7676,7 +7841,7 @@
             targetPhone = selected.phone;
             targetChartNo = selected.chartNo || '';
 
-            // 同步更新既有病患之藥物過敏史與全身性疾病手術風險
+            // 同步更新既有病患之藥物史/過敏史與全身性疾病手術風險
             const parsedDrug = newAppointmentForm.value.existingPatientDrugAllergies
               ? newAppointmentForm.value.existingPatientDrugAllergies.split(/[,，、]/).map(s => s.trim()).filter(Boolean)
               : [];
@@ -7793,7 +7958,13 @@
           time: '',
           duration: 60,
           doctor: '',
-          chair: ''
+          chair: '',
+          treatmentCategories: [],
+          treatmentItems: [],
+          customCategoryInput: '',
+          customItemInput: '',
+          category: '',
+          notes: ''
         });
 
         const calculatePreviewTimeRange = (startTime, duration) => {
@@ -7811,19 +7982,41 @@
 
         const startEditAppointmentDateTime = (app) => {
           if (!app) return;
+          // 舊資料可能只有 category／procedure 文字，沒有陣列，就從文字拆回來
+          const cats = Array.isArray(app.treatmentCategories) && app.treatmentCategories.length > 0
+            ? [...app.treatmentCategories]
+            : String(app.category || '').split(/\s*\/\s*/).map(s => s.trim()).filter(Boolean);
+          const items = Array.isArray(app.treatmentItems) && app.treatmentItems.length > 0
+            ? [...app.treatmentItems]
+            : String(app.procedure || '').split(/[,，、]/).map(s => s.trim()).filter(Boolean);
           editAppForm.value = {
             id: app.id,
             date: app.date || clinicToday.value,
             time: app.time || '14:30',
             duration: Number(app.duration) || 60,
             doctor: app.doctor || (clinicDoctors.value[0]?.name || 'TE 醫師'),
-            chair: app.chair || getDefaultChairForDoctor(app.doctor)
+            chair: app.chair || getDefaultChairForDoctor(app.doctor),
+            treatmentCategories: cats,
+            treatmentItems: items,
+            customCategoryInput: '',
+            customItemInput: '',
+            category: app.category || '',
+            notes: app.notes || ''
           };
+          isEditCategoryPickerOpen.value = false;
+          isEditItemPickerOpen.value = false;
           editingAppointmentId.value = app.id;
         };
 
-        const cancelEditAppointmentDateTime = () => {
+        const closeEditAppointment = () => {
+          isEditCategoryPickerOpen.value = false;
+          isEditItemPickerOpen.value = false;
           editingAppointmentId.value = null;
+        };
+
+        const cancelEditAppointmentDateTime = () => {
+          if (!confirm('確定要取消這次的修改嗎？剛才改的內容都不會套用。')) return;
+          closeEditAppointment();
         };
 
         const saveAppointmentDateTime = (app) => {
@@ -7833,9 +8026,9 @@
             alert('請填寫完整的預約看診日期與開始時間！');
             return;
           }
+          if (!confirm(`確定要儲存這筆約診的修改嗎？\n${form.date} ${calculatePreviewTimeRange(form.time, form.duration)}（${form.doctor}）\n日曆、T-3 提醒與相關名單會一併更新。`)) return;
 
           const oldDate = app.date;
-          const oldTime = app.time;
 
           // 1. 更新預約核心時程欄位
           app.date = form.date;
@@ -7843,6 +8036,15 @@
           app.duration = Number(form.duration) || 60;
           if (form.doctor) app.doctor = form.doctor;
           if (form.chair) app.chair = form.chair;
+
+          // 療程與叮嚀：寫法與「安排約診」建立時相同
+          const selectedCats = [...(form.treatmentCategories || [])];
+          const selectedItems = [...(form.treatmentItems || [])];
+          app.treatmentCategories = selectedCats;
+          app.treatmentItems = selectedItems;
+          app.category = selectedCats.join(' / ') || form.category || app.category || '一般門診';
+          app.procedure = selectedItems.join(', ') || app.procedure || '';
+          app.notes = form.notes;
 
           // 2. 自動連動重算 T-3 提醒日 (到診日 - 3 天)
           const newT3 = getTMinus3Date(form.date);
@@ -7858,11 +8060,11 @@
           saveToStorage();
 
           // 5. 關閉編輯狀態
-          editingAppointmentId.value = null;
+          closeEditAppointment();
 
           // 6. 成功反饋提示
           const newTimeRange = getAppointmentTimeRange(app);
-          notify(`已將【${app.patientName}】約診更改為 ${app.date} ${newTimeRange}！T-3 提醒日 (${newT3}) 與全系統排程已同步更新。`, 3500);
+          notify(`已更新【${app.patientName}】的約診：${app.date} ${newTimeRange}。T-3 提醒日 (${newT3}) 與日曆已同步更新。`, 3500);
         };
 
         const showDeletePatientConfirmModal = ref(false);
@@ -8608,7 +8810,7 @@
             pipelineStage: '',
             consultCategory: '',
             doctor: '',
-            leadDoctors: '',
+            leadDoctors: [],
             caseManager: '螺絲小姐',
             projectTotal: 0,
             drugAllergiesInput: '',
@@ -8655,7 +8857,9 @@
             leadStatus: newPatientForm.value.leadStatus || '尚未選擇',
             consultCategory: newPatientForm.value.consultCategory || '尚未選擇',
             doctor: newPatientForm.value.doctor || '尚未指派',
-            leadDoctors: newPatientForm.value.leadDoctors || (newPatientForm.value.doctor ? newPatientForm.value.doctor.replace(' 醫師', '') : ''),
+            // 主責醫師順序存成「TE 醫師, 銘 醫師」字串，與個案編輯儲存的格式相同
+            leadDoctors: (Array.isArray(newPatientForm.value.leadDoctors) ? newPatientForm.value.leadDoctors.join(', ') : newPatientForm.value.leadDoctors)
+              || (newPatientForm.value.doctor ? newPatientForm.value.doctor.replace(' 醫師', '') : ''),
             caseManager: newPatientForm.value.caseManager || '螺絲小姐',
             projectTotal: Number(newPatientForm.value.projectTotal) || 0,
             paidAmount: 0,
@@ -8665,7 +8869,7 @@
             systemicDiseases: parsedSystemic,
             medicalAlerts: combinedAlerts,
             chiefComplaint: newPatientForm.value.chiefComplaint || '',
-            consultNotes: '螺絲小姐初診建立完成。',
+            consultNotes: '',
             paymentHistory: []
           };
 
@@ -8931,6 +9135,7 @@
 
         const getLabStatusBadgeClass = (status) => {
           switch (status) {
+            case '已送達待製作': return 'bg-slate-50 text-slate-700 border-slate-200';
             case '製作中': return 'bg-amber-50 text-amber-700 border-amber-200';
             case '已送達診所待驗收': return 'bg-blue-50 text-blue-700 border-blue-200';
             case '驗收完成': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -9428,6 +9633,7 @@
           getStagePatients,
           urgentLabOrders,
           labChaseOrders,
+          isLabNotArrived,
           pendingFollowups,
           followupListFilter,
           displayedFollowups,
@@ -9554,6 +9760,13 @@
           addCustomTreatmentCategory,
           toggleTreatmentItem,
           addCustomTreatmentItem,
+          isEditCategoryPickerOpen,
+          isEditItemPickerOpen,
+          editCascadedTreatmentGroups,
+          toggleEditTreatmentCategory,
+          addCustomEditTreatmentCategory,
+          toggleEditTreatmentItem,
+          addCustomEditTreatmentItem,
           selectedMetaCategory,
           newDoctorName,
           newDoctorChair,
