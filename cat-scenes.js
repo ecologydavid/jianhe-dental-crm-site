@@ -131,37 +131,152 @@
     </svg>`
   };
   const CatPlayground = {
-    components: { DiaryCat },
-    template: `<svg class="cat-playground" viewBox="0 0 620 500" aria-hidden="true" focusable="false">
-      <g class="room-lines pencil-lines">
-        <path class="room-wash" d="M295 80q17-21 80-21l169 8q14 65-6 140l-232 7Z"/>
-        <path d="m327 72 213 2-2 174-210-1Z"/><path d="m335 81 93 1-1 76-92-1Zm101 1 95 1-1 75-94 0ZM335 166l92 1-1 72-92-1Zm101 1 94 0-1 72-93 0Z"/>
-        <path d="m315 251 237 1m-218 8 201 1"/>
-        <path class="curtain" d="M322 69c-11 58-18 101-42 155l38 3c22-57 23-110 19-158m196 4c4 63 12 112 31 150l-30 4c-14-59-16-105-13-154"/>
-        <path class="pencil-faint" d="m304 218 18-88m233 82-20-78"/>
-        <path class="sun-disc" d="M483 104c11-4 26 3 27 14 2 13-10 24-22 23-12-1-20-9-19-20 0-8 6-14 14-17Z"/>
-        <path class="pencil-faint" d="m350 199 18-16 16 14 15-19 21 23m27 6 18-13 17 10 18-15 24 18"/>
-        <path d="m58 346 62 1 5 52-56 0Zm6 7 54 1"/>
-        <path class="plant-stem" d="M95 348c4-36-6-65-9-82m10 63c16-8 28-20 34-36m-36 30c-23-9-31-21-32-39m32 19c14-13 15-30 11-44"/>
-        <path class="plant-leaf" d="M86 273c-22-4-24-16-19-25 16 2 22 11 19 25Zm20 4c-7-20 0-30 10-32 7 17 1 27-10 32Zm17 32c-1-18 10-25 21-22-2 16-11 22-21 22Zm-48 6c-17-1-26-12-23-23 19 1 25 9 23 23Z"/>
-        <path class="room-book" d="m439 367 72-3 2 12-73 3Zm8 13 76 1-1 13-77-2Z"/>
-        <path class="pencil-faint" d="m447 370 57-2m-54 18 66 1"/>
-        <path d="M31 400c152 2 214-2 326 0 93 2 168-2 238 1"/>
-        <path class="rug" d="M158 415c32-13 229-12 268 1l20 30c-51 12-257 11-309-1Z"/>
-        <path class="pencil-faint" d="m155 437 271 2m-267-15 255 3m-272 26-4 5m15-4-3 5m16-4-2 5m247-5 3 5m12-6 4 5m9-8 5 5"/>
-      </g>
-      <g class="basket-swing">
-        <path class="basket-cord" d="M178 14 122 145m56-131 47 131"/>
-        <ellipse class="basket-back" cx="174" cy="153" rx="62" ry="32"/>
-        <diary-cat x="116" y="90" width="115" height="80" pose="loaf" coat="calico"/>
-        <path class="basket-front" d="M112 150q62 32 125-1c-4 40-116 49-125 1Z"/>
-        <path class="basket-weave" d="M120 161q57 28 108 0m-98 12q40 14 91-1m-81-13 5 22m8-19 4 21m9-19 2 21m11-21v20m11-22-2 20m14-23-3 19m15-23-4 19"/>
-      </g>
-      <g class="play-yarn"><circle cx="0" cy="0" r="9"/><path d="M-6-5q14 2 12 10M-5 6q11-2 10-11M-3-7q-3 9 5 14M9 2q18 5 29-2"/></g>
-      <g class="runner-track runner-ginger"><g class="runner-facing"><diary-cat width="148" height="99" pose="walk" coat="ginger" moving/></g></g>
-      <g class="runner-track runner-grey"><g class="runner-facing"><diary-cat width="127" height="85" pose="walk" coat="grey" moving/></g></g>
-      <g class="room-butterfly"><path d="M0 0c-17-13-19 7-2 5C-15 17 2 21 2 5 16 19 20 3 4 3 21-7 4-15 2 0"/><path d="m1 1 1 9"/></g>
-    </svg>`
+    props: { paused: Boolean },
+    data() {
+      return {
+        wandX: 0,
+        wandY: 0,
+        boops: { sleep: 0, calico: 0, jump: 0, tabby: 0, play: 0 },
+        hearts: [],
+        motes: [
+          { left: '54%', top: '34%', size: 6, delay: '0s', duration: '10.5s' },
+          { left: '63%', top: '48%', size: 5, delay: '-2.6s', duration: '12s' },
+          { left: '72%', top: '38%', size: 8, delay: '-5.1s', duration: '11s' },
+          { left: '80%', top: '52%', size: 5, delay: '-1.5s', duration: '9.8s' },
+          { left: '46%', top: '56%', size: 7, delay: '-6.8s', duration: '13s' },
+          { left: '68%', top: '66%', size: 6, delay: '-3.7s', duration: '10.2s' },
+          { left: '86%', top: '42%', size: 7, delay: '-7.4s', duration: '12.5s' },
+          { left: '58%', top: '26%', size: 5, delay: '-4.2s', duration: '11.4s' }
+        ]
+      };
+    },
+    methods: {
+      onRoomMove(e) {
+        if (this.paused) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+        const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+        this.wandX = Math.max(-1, Math.min(1, nx));
+        this.wandY = Math.max(-1, Math.min(1, ny));
+      },
+      onRoomLeave() {
+        this.wandX = 0;
+        this.wandY = 0;
+      },
+      petCat(which, e) {
+        this.boops[which] = (this.boops[which] || 0) + 1;
+        const stage = this.$refs.roomStage;
+        if (!stage) return;
+        const rect = stage.getBoundingClientRect();
+        const x = e ? ((e.clientX - rect.left) / rect.width) * 100 : 55;
+        const y = e ? ((e.clientY - rect.top) / rect.height) * 100 : 65;
+        const id = Date.now() + Math.random();
+        const glyph = which === 'sleep' ? '💤' : (Math.random() > 0.45 ? '♥' : '♪');
+        this.hearts.push({ id, x, y, glyph });
+        setTimeout(() => {
+          this.hearts = this.hearts.filter(h => h.id !== id);
+        }, 1150);
+      }
+    },
+    template: `<div class="cat-live-wrap">
+      <div
+        ref="roomStage"
+        class="cat-live-room"
+        :style="{ '--wand-x': (wandX * 36).toFixed(1) + 'px', '--wand-y': (wandY * 24).toFixed(1) + 'px' }"
+        @mousemove="onRoomMove"
+        @mouseleave="onRoomLeave"
+      >
+        <!-- 全版真實午後暖陽客廳背景 -->
+        <img src="lock-room-bg.jpg" alt="" class="cat-room-photo" aria-hidden="true" draggable="false"/>
+        <div class="cat-room-sunlight" aria-hidden="true"></div>
+        <div class="cat-room-motes" aria-hidden="true">
+          <span
+            v-for="(m, i) in motes"
+            :key="i"
+            class="cat-mote"
+            :style="{ left: m.left, top: m.top, width: m.size + 'px', height: m.size + 'px', animationDelay: m.delay, animationDuration: m.duration }"
+          ></span>
+        </div>
+
+        <!-- 1. 沙發上歪頭賣萌的三花小貓 -->
+        <div class="real-cat-calico-wrap" :key="'calico-' + boops.calico" :class="{ 'is-booped': boops.calico > 0 }" @click="petCat('calico', $event)" title="點一下摸摸沙發上的三花小貓">
+          <div class="real-cat-sofa-shadow" aria-hidden="true"></div>
+          <div class="real-cat-calico-body">
+            <img src="lock-cat-calico.png" alt="坐在沙發上歪頭好奇的三花小貓" class="real-cat-img" draggable="false"/>
+          </div>
+        </div>
+
+        <!-- 2. 沙發上藤編窩裡熟睡的奶油橘小貓（呼吸起伏＋飄出 Zzz） -->
+        <div class="real-cat-sleep-wrap" :key="'sleep-' + boops.sleep" :class="{ 'is-booped': boops.sleep > 0 }" @click="petCat('sleep', $event)" title="點一下輕輕摸摸睡覺的小橘貓">
+          <div class="real-cat-sofa-shadow sleep-shadow" aria-hidden="true"></div>
+          <div class="real-cat-sleep-body">
+            <img src="lock-cat-sleep.png" alt="在沙發藤編窩裡熟睡的奶油橘小貓" class="real-cat-img" draggable="false"/>
+          </div>
+          <div class="sleep-zzz" aria-hidden="true">
+            <span class="zzz z1">z</span>
+            <span class="zzz z2">z</span>
+            <span class="zzz z3">Z</span>
+          </div>
+        </div>
+
+        <!-- 滾動的毛線球（小橘貓在地毯上追逐目標） -->
+        <div class="real-yarn-ball" aria-hidden="true">
+          <svg viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="16" fill="#d9a566" stroke="#b68142" stroke-width="1.5"/>
+            <path d="M8 15 Q20 10 32 18 M7 23 Q19 18 33 25 M14 6 Q18 20 12 34 M24 5 Q28 19 22 35" fill="none" stroke="#f7e3c2" stroke-width="1.7" stroke-linecap="round" opacity="0.85"/>
+          </svg>
+        </div>
+
+        <!-- 3. 地毯上活蹦亂跳追毛線球的小橘貓 -->
+        <div class="real-cat-jumper-lane">
+          <div class="real-cat-jumper-shadow" aria-hidden="true"></div>
+          <div class="real-cat-jumper-arc" :key="'jump-' + boops.jump" :class="{ 'is-booped': boops.jump > 0 }" @click="petCat('jump', $event)" title="點一下跟跳躍的小橘貓玩">
+            <div class="real-cat-jumper-turn">
+              <img src="lock-cat-jump.png" alt="在地毯上開心跳躍追毛線球的小橘貓" class="real-cat-img cat-jump-img" draggable="false"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 在客廳暖陽木地板上散步探險的虎斑小貓 -->
+        <div class="real-cat-tabby-lane">
+          <div class="real-cat-tabby-shadow" aria-hidden="true"></div>
+          <div class="real-cat-tabby-step" :key="'tabby-' + boops.tabby" :class="{ 'is-booped': boops.tabby > 0 }" @click="petCat('tabby', $event)" title="點一下跟散步的虎斑小貓玩">
+            <div class="real-cat-tabby-turn">
+              <img src="lock-cat-tabby.png" alt="在客廳地毯上好奇散步的虎斑小貓" class="real-cat-img cat-tabby-img" draggable="false"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 窗邊龜背芋旁舉爪撲蝴蝶的藍眼小白貓 -->
+        <div class="real-cat-player-wrap" :key="'play-' + boops.play" :class="{ 'is-booped': boops.play > 0 }" @click="petCat('play', $event)" title="點一下逗逗舉爪撲蝴蝶的小白貓">
+          <div class="real-cat-player-shadow" aria-hidden="true"></div>
+          <div class="real-cat-player-hop">
+            <img src="lock-cat-play.png" alt="在窗邊舉爪撲蝴蝶的藍眼小白貓" class="real-cat-img" draggable="false"/>
+          </div>
+        </div>
+
+        <!-- 午後暖陽中飛舞的小蝴蝶（微微跟隨逗貓棒游標） -->
+        <div class="real-butterfly-track" aria-hidden="true">
+          <div class="real-butterfly-wand-offset">
+            <svg class="real-butterfly-svg" viewBox="0 0 36 30">
+              <g class="bf-wing-l"><ellipse cx="11" cy="11" rx="9" ry="6.5" transform="rotate(-24 11 11)" fill="#fbbf24" opacity="0.9"/><ellipse cx="12" cy="19" rx="6" ry="4.5" transform="rotate(18 12 19)" fill="#f59e0b" opacity="0.84"/></g>
+              <g class="bf-wing-r"><ellipse cx="25" cy="11" rx="9" ry="6.5" transform="rotate(24 25 11)" fill="#fbbf24" opacity="0.9"/><ellipse cx="24" cy="19" rx="6" ry="4.5" transform="rotate(-18 24 19)" fill="#f59e0b" opacity="0.84"/></g>
+              <rect x="17" y="9" width="2" height="12" rx="1" fill="#78350f"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 點擊摸貓飄出的可愛愛心／音符／Zzz -->
+        <span
+          v-for="h in hearts"
+          :key="h.id"
+          class="cat-boop-heart"
+          :style="{ left: h.x + '%', top: h.y + '%' }"
+          aria-hidden="true"
+        >{{ h.glyph }}</span>
+      </div>
+    </div>`
   };
   window.ClinicCatScenes = { CatInkDefs, DiaryCat, DiaryObject, DiaryVignette, CatPlayground };
 })();

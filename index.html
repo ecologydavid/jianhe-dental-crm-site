@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>再過幾天就放假 - 個案管理體系統</title>
+  <title>再過幾天就放假 - 個案管理系統</title>
   <link rel="icon" type="image/png" href="logo.png" />
   <!-- 防閃跳遮罩：在 Vue 編譯掛載前，徹底隱藏所有未渲染的原始模板與彈窗 -->
   <style>
@@ -481,7 +481,7 @@
         <div v-show="!isSidebarCollapsed" class="min-w-0 flex-1">
           <h1 class="text-[15px] font-semibold text-slate-900 leading-tight truncate" title="再過幾天就放假">再過幾天就放假</h1>
           <div class="flex items-center gap-1.5 mt-1">
-            <span class="text-xs text-slate-500 truncate">個案管理體系統</span>
+            <span class="text-xs text-slate-500 truncate">個案管理系統</span>
             <span class="inline-flex items-center h-[18px] px-1.5 rounded bg-sky-100 text-sky-700 text-[11px] font-medium flex-shrink-0" title="撐一下zZ">撐一下zZ</span>
           </div>
         </div>
@@ -698,18 +698,20 @@
       <!-- 今日待辦提醒列（T-3、後續預約、須改約合併為一列） -->
       <div
         v-if="isSectionVisible('dashboardTopBanner') && ((pendingT3Count > 0 && showT3TopBanner) || (todayFollowupPendingCount > 0 && showTodayFollowupBanner) || (todayReschedulePendingCount > 0 && showTodayRescheduleBanner))"
-        class="flex items-center gap-x-6 gap-y-1 min-h-[46px] px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-sm text-slate-700 flex-shrink-0 flex-wrap"
+        class="flex items-center gap-x-5 gap-y-1 min-h-[46px] px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-sm text-slate-700 flex-shrink-0 flex-wrap"
       >
         <span class="inline-flex items-center gap-2 font-semibold text-amber-800 flex-shrink-0"><reminder-bell></reminder-bell>今天要處理</span>
-        <button v-if="pendingT3Count > 0 && showT3TopBanner" type="button" @click="openReminderCenter('t3', 'pending')" class="hover:text-slate-900 hover:underline underline-offset-4 decoration-amber-400" title="看診日前 3 天發送術前衛教、特殊用藥叮嚀與出席確認">
-          T-3 術前提醒 <span class="num font-semibold text-slate-900">{{ pendingT3Count }}</span> 位待發送
-        </button>
-        <button v-if="todayFollowupPendingCount > 0 && showTodayFollowupBanner" type="button" @click="openReminderCenter('followup')" class="hover:text-slate-900 hover:underline underline-offset-4 decoration-amber-400" title="到診後還沒預約下次的病患">
-          後續預約 <span class="num font-semibold text-slate-900">{{ todayFollowupPendingCount }}</span> 位待約下次
-        </button>
-        <button v-if="todayReschedulePendingCount > 0 && showTodayRescheduleBanner" type="button" @click="openReminderCenter('reschedule')" class="hover:text-slate-900 hover:underline underline-offset-4 decoration-amber-400" title="未報到、需要聯繫改約的病患">
-          須改約 <span class="num font-semibold text-slate-900">{{ todayReschedulePendingCount }}</span> 位未報到
-        </button>
+        <div class="flex items-center flex-wrap gap-y-1">
+          <button v-if="pendingT3Count > 0 && showT3TopBanner" type="button" @click="openReminderCenter('t3', 'pending')" class="hover:text-slate-900 hover:underline underline-offset-4 decoration-amber-400" title="看診日前 3 天發送術前衛教、特殊用藥叮嚀與出席確認">
+            T-3 術前提醒 <span class="num font-semibold text-slate-900">{{ pendingT3Count }}</span> 位待發送
+          </button><span v-if="(pendingT3Count > 0 && showT3TopBanner) && ((todayFollowupPendingCount > 0 && showTodayFollowupBanner) || (todayReschedulePendingCount > 0 && showTodayRescheduleBanner))" aria-hidden="true" class="text-slate-500 mr-1.5">，</span>
+          <button v-if="todayFollowupPendingCount > 0 && showTodayFollowupBanner" type="button" @click="openReminderCenter('followup')" class="hover:text-slate-900 hover:underline underline-offset-4 decoration-amber-400" title="到診後還沒預約下次的病患">
+            後續預約 <span class="num font-semibold text-slate-900">{{ todayFollowupPendingCount }}</span> 位待約下次
+          </button><span v-if="(todayFollowupPendingCount > 0 && showTodayFollowupBanner) && (todayReschedulePendingCount > 0 && showTodayRescheduleBanner)" aria-hidden="true" class="text-slate-500 mr-1.5">，</span>
+          <button v-if="todayReschedulePendingCount > 0 && showTodayRescheduleBanner" type="button" @click="openReminderCenter('reschedule')" class="hover:text-slate-900 hover:underline underline-offset-4 decoration-amber-400" title="未報到、需要聯繫改約的病患">
+            須改約 <span class="num font-semibold text-slate-900">{{ todayReschedulePendingCount }}</span> 位未報到
+          </button><span aria-hidden="true" class="text-slate-500">。</span>
+        </div>
         <div class="flex-1"></div>
         <button type="button" @click="showT3TopBanner = false; showTodayFollowupBanner = false; showTodayRescheduleBanner = false" class="btn btn-ghost btn-sm btn-icon text-amber-800 hover:bg-amber-100" title="隱藏提醒列（可從右上角「提醒」查看）" aria-label="隱藏提醒列">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -1358,11 +1360,21 @@
         <!-- 5. 技工工件 (Lab) -->
         <!-- ============================================== -->
         <div v-if="currentTab === 'lab'" class="space-y-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <p class="text-[13px] text-slate-500">
+          <div class="flex flex-wrap items-center gap-3">
+            <p class="text-[13px] text-slate-500 flex-shrink-0">
               未到件 <span class="num text-slate-900">{{ urgentLabOrders.length }}</span> 件
               <template v-if="labChaseOrders.length > 0"> · <span class="text-rose-700">需催件 <span class="num">{{ labChaseOrders.length }}</span> 件</span></template>
             </p>
+            <div class="seg max-w-full overflow-x-auto" role="group" aria-label="篩選技工單狀態">
+              <button
+                v-for="opt in labStatusFilterOptions"
+                :key="opt.value"
+                type="button"
+                @click="labStatusFilter = opt.value"
+                class="seg-btn whitespace-nowrap"
+                :class="{ 'is-active': labStatusFilter === opt.value }"
+              >{{ opt.label }} <span class="num">{{ labStatusCounts[opt.value] || 0 }}</span></button>
+            </div>
             <div class="flex-1"></div>
             <button type="button" @click="openNewLabModal" class="btn btn-primary">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -1386,7 +1398,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="order in labOrders" :key="order.id">
+                  <tr v-for="order in displayedLabOrders" :key="order.id">
                     <td class="whitespace-nowrap">
                       <button type="button" @click="openEditLabModal(order)" class="num text-[13px] font-medium text-slate-700 hover:text-blue-700 hover:underline underline-offset-4" title="編輯這張工單">{{ order.orderNo }}</button>
                       <div class="text-xs text-slate-500 mt-0.5">送件 <span class="num">{{ order.sentDate || '—' }}</span></div>
@@ -1406,12 +1418,12 @@
                     <td class="num text-slate-900 whitespace-nowrap">{{ order.appointmentDate || '—' }}</td>
                     <td>
                       <select v-model="order.status" @change="saveToStorage" class="field field-sm w-auto cursor-pointer" :class="getLabStatusBadgeClass(order.status)" aria-label="工件狀態">
-                        <option value="已送達待製作">已送達待製作</option>
                         <option value="製作中">製作中</option>
                         <option value="已送達診所待驗收">已送達待驗收</option>
-                        <option value="驗收完成">驗收完成</option>
                         <option value="需退回重做">需退回重做</option>
-                        <!-- 「試戴已裝固」已停用，只在舊工單仍是這個狀態時顯示，避免選單變空白 -->
+                        <option value="驗收完成">驗收完成</option>
+                        <!-- 舊狀態已停用，只在舊工單仍是這個狀態時顯示，避免選單變空白 -->
+                        <option v-if="order.status === '已送達待製作'" value="已送達待製作" disabled>已送達待製作（已停用）</option>
                         <option v-if="order.status === '試戴已裝固'" value="試戴已裝固" disabled>試戴已裝固（已停用）</option>
                       </select>
                     </td>
@@ -1428,10 +1440,11 @@
                       </div>
                     </td>
                   </tr>
-                  <tr v-if="labOrders.length === 0">
+                  <tr v-if="displayedLabOrders.length === 0">
                     <td colspan="8" class="py-12 text-center">
-                      <p class="text-sm text-slate-600">還沒有技工單。</p>
-                      <button type="button" @click="openNewLabModal" class="btn btn-secondary btn-sm mt-3">新增技工單</button>
+                      <p class="text-sm text-slate-600">{{ labOrders.length === 0 ? '還沒有技工單。' : '這個狀態目前沒有技工單。' }}</p>
+                      <button v-if="labOrders.length === 0" type="button" @click="openNewLabModal" class="btn btn-secondary btn-sm mt-3">新增技工單</button>
+                      <button v-else type="button" @click="labStatusFilter = 'all'" class="btn btn-secondary btn-sm mt-3">查看全部</button>
                     </td>
                   </tr>
                 </tbody>
@@ -3545,11 +3558,11 @@
               <label v-if="editingLabId" class="block">
                 <span class="field-label">狀態</span>
                 <select v-model="newLabForm.status" class="field" :class="getLabStatusBadgeClass(newLabForm.status)">
-                  <option value="已送達待製作">已送達待製作</option>
                   <option value="製作中">製作中</option>
                   <option value="已送達診所待驗收">已送達待驗收</option>
-                  <option value="驗收完成">驗收完成</option>
                   <option value="需退回重做">需退回重做</option>
+                  <option value="驗收完成">驗收完成</option>
+                  <option v-if="newLabForm.status === '已送達待製作'" value="已送達待製作" disabled>已送達待製作（已停用）</option>
                   <option v-if="newLabForm.status === '試戴已裝固'" value="試戴已裝固" disabled>試戴已裝固（已停用）</option>
                 </select>
               </label>
@@ -4108,9 +4121,8 @@
             <p id="unlock-feedback" class="unlock-feedback text-sm" :class="lockPasswordError ? 'text-rose-700' : 'text-slate-500'" aria-live="polite">{{ lockPasswordError ? lockPasswordErrorMessage : '準備好了，就回來吧。' }}</p>
           </form>
         </div>
-        <div class="keeper-play-space" aria-hidden="true">
-          <cat-playground></cat-playground>
-          <p class="keeper-room-note"><span></span>貓咪的午休時間<span></span></p>
+        <div class="keeper-play-space">
+          <cat-playground :paused="catsPaused"></cat-playground>
         </div>
         <p class="keeper-footer">今天也辛苦了，慢慢來。</p>
       </div>
@@ -5715,7 +5727,7 @@
 
         const exportData = () => {
           const exportObj = {
-            system: '再過幾天就放假 - 個案管理體系統',
+            system: '再過幾天就放假 - 個案管理系統',
             version: 'v11_dental_chart_dashboard',
             appointments: appointments.value,
             patients: patients.value,
@@ -5729,7 +5741,7 @@
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `個案管理體系統_備份_${new Date().toISOString().slice(0,10)}.json`;
+          a.download = `個案管理系統_備份_${new Date().toISOString().slice(0,10)}.json`;
           a.click();
         };
 
@@ -6574,15 +6586,17 @@
         const pendingT3Reminders = computed(() => allT3Reminders.value.filter(r => (r.stage === 'today' || r.stage === 'overdue') && !r.reminderDone));
         const pendingT3Count = computed(() => pendingT3Reminders.value.length);
 
-        // 提醒視窗與首頁的 T-3、後續預約、須改約，每個分頁都依看診日期＋時間由遠而近排列，越晚的排越上面。
+        // 提醒視窗與首頁的 T-3、後續預約、須改約，預設依看診日期＋時間由遠而近排列（越晚的排越上面）；
+        // 唯獨 T-3「即將到期」為未來待提醒名單，依看診日期＋時間由近而遠排列（越快到期的排越上面）。
         const compareAppDateTimeDesc = (a, b) => (b.date + ' ' + (b.time || '')).localeCompare(a.date + ' ' + (a.time || ''));
+        const compareAppDateTimeAsc = (a, b) => (a.date + ' ' + (a.time || '')).localeCompare(b.date + ' ' + (b.time || ''));
 
         const displayedDashboardT3List = computed(() => {
           let list = allT3Reminders.value;
           if (dashboardT3Tab.value === 'pending') list = pendingT3Reminders.value;
           else if (dashboardT3Tab.value === 'upcoming') list = upcomingT3Reminders.value;
           else if (dashboardT3Tab.value === 'done') list = doneT3Reminders.value;
-          return list.slice().sort(compareAppDateTimeDesc);
+          return list.slice().sort(dashboardT3Tab.value === 'upcoming' ? compareAppDateTimeAsc : compareAppDateTimeDesc);
         });
 
         const displayedModalT3List = computed(() => {
@@ -6592,7 +6606,7 @@
           else if (t3ModalFilter.value === 'overdue') list = overdueT3Reminders.value;
           else if (t3ModalFilter.value === 'upcoming') list = upcomingT3Reminders.value;
           else if (t3ModalFilter.value === 'done') list = doneT3Reminders.value;
-          return list.slice().sort(compareAppDateTimeDesc);
+          return list.slice().sort(t3ModalFilter.value === 'upcoming' ? compareAppDateTimeAsc : compareAppDateTimeDesc);
         });
 
         // 後續預約與須改約不限日期，名單會比較長；先依病人建索引，查詢結果與逐筆掃描相同。
@@ -7342,12 +7356,67 @@
           return list;
         };
 
-        // 工件還沒回到診所的狀態：已送達技工所待製作、製作中
-        const LAB_NOT_ARRIVED_STATUSES = ['已送達待製作', '製作中'];
+        // 工件還沒回到診所的狀態：製作中（保留對舊狀態「已送達待製作」的相容判斷）
+        const LAB_NOT_ARRIVED_STATUSES = ['製作中', '已送達待製作'];
         const isLabNotArrived = (order) => Boolean(order) && LAB_NOT_ARRIVED_STATUSES.includes(order.status);
 
         const urgentLabOrders = computed(() => {
           return labOrders.value.filter(isLabNotArrived);
+        });
+
+        // 技工工件狀態篩選與排序：
+        // 1. 先依狀態：製作中 > 已送達待驗收 > 需退回重做 > 驗收完成
+        // 2. 同狀態再依「預計到件」由早到晚（純升序）排列，未填日期排最後
+        const LAB_STATUS_SORT_ORDER = {
+          '製作中': 1,
+          '已送達診所待驗收': 2,
+          '需退回重做': 3,
+          '驗收完成': 4
+        };
+        const labStatusFilter = ref('all');
+        const labStatusFilterOptions = [
+          { value: 'all', label: '全部' },
+          { value: '製作中', label: '製作中' },
+          { value: '已送達診所待驗收', label: '已送達待驗收' },
+          { value: '需退回重做', label: '需退回重做' },
+          { value: '驗收完成', label: '驗收完成' }
+        ];
+        const labStatusCounts = computed(() => {
+          const counts = { all: labOrders.value.length, '製作中': 0, '已送達診所待驗收': 0, '需退回重做': 0, '驗收完成': 0 };
+          for (const order of labOrders.value) {
+            if (Object.prototype.hasOwnProperty.call(counts, order.status)) {
+              counts[order.status] += 1;
+            }
+          }
+          return counts;
+        });
+
+        const normalizeDateKey = (str) => {
+          const s = String(str || '').trim().replace(/\//g, '-');
+          if (!s) return '';
+          const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+          return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : s;
+        };
+
+        const sortedLabOrders = computed(() => {
+          return labOrders.value.slice().sort((a, b) => {
+            const pa = LAB_STATUS_SORT_ORDER[a.status] || 99;
+            const pb = LAB_STATUS_SORT_ORDER[b.status] || 99;
+            if (pa !== pb) return pa - pb;
+            const da = normalizeDateKey(a.expectedDate);
+            const db = normalizeDateKey(b.expectedDate);
+            if (da !== db) {
+              if (!da) return 1;
+              if (!db) return -1;
+              return da.localeCompare(db);
+            }
+            return normalizeDateKey(a.sentDate).localeCompare(normalizeDateKey(b.sentDate)) || String(a.orderNo || '').localeCompare(String(b.orderNo || ''));
+          });
+        });
+
+        const displayedLabOrders = computed(() => {
+          if (labStatusFilter.value === 'all') return sortedLabOrders.value;
+          return sortedLabOrders.value.filter(o => o.status === labStatusFilter.value);
         });
 
         const pendingFollowups = computed(() => {
@@ -9628,6 +9697,11 @@
           appointments,
           patients,
           labOrders,
+          labStatusFilter,
+          labStatusFilterOptions,
+          labStatusCounts,
+          sortedLabOrders,
+          displayedLabOrders,
           followups,
           filteredPatients,
           getStagePatients,
